@@ -1,6 +1,6 @@
 # Sammy
 
-> Beacon Object File (BOF) that interacts with SAM & domain policy remote services.
+> Beacon Object File (BOF) for [Havoc](https://github.com/HavocFramework/Havoc) that interacts with SAM & domain policy remote services.
 
 ## Showcase
 

@@ -44,7 +44,7 @@ def list_domains(demon_id, *args):
 
     task_id = demon.ConsoleWrite(demon.CONSOLE_TASK, "Tasked the demon to execute the command")
 
-    demon.InlineExecute(task_id, "go", "/tmp/sammy.x64.o", packer.getbuffer(), False)
+    demon.InlineExecute(task_id, "go", "./bin/sammy.x64.o", packer.getbuffer(), False)
 
     return task_id
 
@@ -75,7 +75,7 @@ def add_account_right(demon_id, *args):
 
     task_id = demon.ConsoleWrite(demon.CONSOLE_TASK, "Tasked the demon to execute the command")
 
-    demon.InlineExecute(task_id, "go", "/tmp/sammy.x64.o", packer.getbuffer(), False)
+    demon.InlineExecute(task_id, "go", "./bin/sammy.x64.o", packer.getbuffer(), False)
 
     return task_id
 
@@ -106,7 +106,7 @@ def remove_account_right(demon_id, *args):
 
     task_id = demon.ConsoleWrite(demon.CONSOLE_TASK, "Tasked the demon to execute the command")
 
-    demon.InlineExecute(task_id, "go", "/tmp/sammy.x64.o", packer.getbuffer(), False)
+    demon.InlineExecute(task_id, "go", "./bin/sammy.x64.o", packer.getbuffer(), False)
 
     return task_id
 
@@ -135,7 +135,7 @@ def list_account_rights(demon_id, *args):
 
     task_id = demon.ConsoleWrite(demon.CONSOLE_TASK, "Tasked the demon to execute the command")
 
-    demon.InlineExecute(task_id, "go", "/tmp/sammy.x64.o", packer.getbuffer(), False)
+    demon.InlineExecute(task_id, "go", "./bin/sammy.x64.o", packer.getbuffer(), False)
 
     return task_id
 
@@ -166,7 +166,7 @@ def rid_cycling(demon_id, *args):
 
     task_id = demon.ConsoleWrite(demon.CONSOLE_TASK, "Tasked the demon to execute the command")
 
-    demon.InlineExecute(task_id, "go", "/tmp/sammy.x64.o", packer.getbuffer(), False)
+    demon.InlineExecute(task_id, "go", "./bin/sammy.x64.o", packer.getbuffer(), False)
 
     return task_id
 
@@ -193,7 +193,7 @@ def enum_password_policy(demon_id, *args):
 
     task_id = demon.ConsoleWrite(demon.CONSOLE_TASK, "Tasked the demon to execute the command")
 
-    demon.InlineExecute(task_id, "go", "/tmp/sammy.x64.o", packer.getbuffer(), False)
+    demon.InlineExecute(task_id, "go", "./bin/sammy.x64.o", packer.getbuffer(), False)
 
     return task_id
 
@@ -220,7 +220,7 @@ def list_users(demon_id, *args):
 
     task_id = demon.ConsoleWrite(demon.CONSOLE_TASK, "Tasked the demon to execute the command")
 
-    demon.InlineExecute(task_id, "go", "/tmp/sammy.x64.o", packer.getbuffer(), False)
+    demon.InlineExecute(task_id, "go", "./bin/sammy.x64.o", packer.getbuffer(), False)
     return task_id
 
 
@@ -246,7 +246,7 @@ def list_groups(demon_id, *args):
 
     task_id = demon.ConsoleWrite(demon.CONSOLE_TASK, "Tasked the demon to execute the command")
 
-    demon.InlineExecute(task_id, "go", "/tmp/sammy.x64.o", packer.getbuffer(), False)
+    demon.InlineExecute(task_id, "go", "./bin/sammy.x64.o", packer.getbuffer(), False)
     return task_id
 
 
@@ -274,7 +274,7 @@ def list_group_members(demon_id, *args):
 
     task_id = demon.ConsoleWrite(demon.CONSOLE_TASK, "Tasked the demon to execute the command")
 
-    demon.InlineExecute(task_id, "go", "/tmp/sammy.x64.o", packer.getbuffer(), False)
+    demon.InlineExecute(task_id, "go", "./bin/sammy.x64.o", packer.getbuffer(), False)
     return task_id
 
 
@@ -302,7 +302,7 @@ def create_group(demon_id, *args):
 
     task_id = demon.ConsoleWrite(demon.CONSOLE_TASK, "Tasked the demon to execute the command")
 
-    demon.InlineExecute(task_id, "go", "/tmp/sammy.x64.o", packer.getbuffer(), False)
+    demon.InlineExecute(task_id, "go", "./bin/sammy.x64.o", packer.getbuffer(), False)
     return task_id
 
 
@@ -330,7 +330,7 @@ def remove_group(demon_id, *args):
 
     task_id = demon.ConsoleWrite(demon.CONSOLE_TASK, "Tasked the demon to execute the command")
 
-    demon.InlineExecute(task_id, "go", "/tmp/sammy.x64.o", packer.getbuffer(), False)
+    demon.InlineExecute(task_id, "go", "./bin/sammy.x64.o", packer.getbuffer(), False)
     return task_id
 
 
@@ -360,7 +360,7 @@ def add_group_member(demon_id, *args):
 
     task_id = demon.ConsoleWrite(demon.CONSOLE_TASK, "Tasked the demon to execute the command")
 
-    demon.InlineExecute(task_id, "go", "/tmp/sammy.x64.o", packer.getbuffer(), False)
+    demon.InlineExecute(task_id, "go", "./bin/sammy.x64.o", packer.getbuffer(), False)
     return task_id
 
 
@@ -390,7 +390,7 @@ def remove_group_member(demon_id, *args):
 
     task_id = demon.ConsoleWrite(demon.CONSOLE_TASK, "Tasked the demon to execute the command")
 
-    demon.InlineExecute(task_id, "go", "/tmp/sammy.x64.o", packer.getbuffer(), False)
+    demon.InlineExecute(task_id, "go", "./bin/sammy.x64.o", packer.getbuffer(), False)
     return task_id
 
 
@@ -420,7 +420,7 @@ def create_user(demon_id, *args):
 
     task_id = demon.ConsoleWrite(demon.CONSOLE_TASK, "Tasked the demon to execute the command")
 
-    demon.InlineExecute(task_id, "go", "/tmp/sammy.x64.o", packer.getbuffer(), False)
+    demon.InlineExecute(task_id, "go", "./bin/sammy.x64.o", packer.getbuffer(), False)
     return task_id
 
 
@@ -448,7 +448,7 @@ def remove_user(demon_id, *args):
 
     task_id = demon.ConsoleWrite(demon.CONSOLE_TASK, "Tasked the demon to execute the command")
 
-    demon.InlineExecute(task_id, "go", "/tmp/sammy.x64.o", packer.getbuffer(), False)
+    demon.InlineExecute(task_id, "go", "./bin/sammy.x64.o", packer.getbuffer(), False)
     return task_id
 
 
@@ -480,7 +480,7 @@ def change_password(demon_id, *args):
 
     task_id = demon.ConsoleWrite(demon.CONSOLE_TASK, "Tasked the demon to execute the command")
 
-    demon.InlineExecute(task_id, "go", "/tmp/sammy.x64.o", packer.getbuffer(), False)
+    demon.InlineExecute(task_id, "go", "./bin/sammy.x64.o", packer.getbuffer(), False)
     return task_id
 
 
@@ -510,7 +510,7 @@ def force_change_password(demon_id, *args):
 
     task_id = demon.ConsoleWrite(demon.CONSOLE_TASK, "Tasked the demon to execute the command")
 
-    demon.InlineExecute(task_id, "go", "/tmp/sammy.x64.o", packer.getbuffer(), False)
+    demon.InlineExecute(task_id, "go", "./bin/sammy.x64.o", packer.getbuffer(), False)
     return task_id
 
 
