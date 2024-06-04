@@ -8,8 +8,6 @@
  * Windows Security Internals book by James Forshaw: https://nostarch.com/windows-security-internals
  * reversed (using DnSpy) NtObjectManager dll by James Forshaw to implement things he had already implemented
  * https://www.powershellgallery.com/packages/NtObjectManager/2.0.1
- *
- * TODO: FIX ALL MEMORY LEAKS there are a lot, use SamFreeMemory
  */
 
 /*!
