@@ -1,0 +1,4 @@
+/opt/clion-2024.1.4/bin/cmake/linux/x64/bin/cmake -DCMAKE_BUILD_TYPE=Debug -DCMAKE_MAKE_PROGRAM=/opt/clion-2024.1.4/bin/ninja/linux/x64/ninja -DCMAKE_C_COMPILER=x86_64-w64-mingw32-gcc -DCMAKE_CXX_COMPILER=x86_64-w64-mingw32-g++ -G Ninja -S /home/noah/dev/bof-collection/proc -B /home/noah/dev/bof-collection/proc/cmake-build-debug
+-- Configuring done (0.0s)
+-- Generating done (0.0s)
+-- Build files have been written to: /home/noah/dev/bof-collection/proc/cmake-build-debug

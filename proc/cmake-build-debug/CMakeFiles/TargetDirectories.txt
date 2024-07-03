@@ -1,0 +1,3 @@
+/home/noah/dev/bof-collection/proc/cmake-build-debug/CMakeFiles/proc.dir
+/home/noah/dev/bof-collection/proc/cmake-build-debug/CMakeFiles/edit_cache.dir
+/home/noah/dev/bof-collection/proc/cmake-build-debug/CMakeFiles/rebuild_cache.dir
