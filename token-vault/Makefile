@@ -1,7 +1,7 @@
 BOF_NAME := token-vault
 CC_x64   := x86_64-w64-mingw32-gcc
 CC_x86   := i686-w64-mingw32-gcc
-SRC      := src/entry.c
+SRC      := src/token.c
 
 FLAGS    := -w -Iinclude
 

@@ -7,11 +7,10 @@ set(MINGW_PATH /nix/store/jmsk2m9ixyx2g3x7dybyc1r92r07fxcz-mingw-w64-x86_64-w64-
 include_directories(${MINGW_PATH})
 include_directories(include)
 
-add_executable(token_vault src/entry.c
-        include/base.c
-        include/Native.h
-        include/bofdefs.h
+add_executable(token_vault src/token.c
+        include/Token.h
         include/beacon.h
         include/Defs.h
-        include/Internals.h
+        src/ntlm.c
+        include/Ntlm.h
 )
