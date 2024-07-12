@@ -13,4 +13,5 @@ add_executable(token_vault src/token.c
         include/Defs.h
         src/ntlm.c
         include/Ntlm.h
+        src/hmac_md5.c
 )

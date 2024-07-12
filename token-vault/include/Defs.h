@@ -5,14 +5,17 @@
 #include <ntstatus.h>
 #include <beacon.h>
 
-#define NtCurrentProcess() ( (HANDLE)(LONG_PTR) -1 )
-#define NtCurrentThread() ( (HANDLE)(LONG_PTR) -2 )
-#define NtCurrentProcessToken() ( ( HANDLE ) ( LONG_PTR ) ( -4 ) )
-#define NtCurrentThreadToken() ( ( HANDLE ) ( LONG_PTR ) ( -5 ) )
+#define NtCurrentProcess()              ( ( HANDLE ) ( LONG_PTR ) ( -1 ) )
+#define NtCurrentThread()               ( ( HANDLE ) ( LONG_PTR ) ( -2 ) )
+#define NtCurrentProcessToken()         ( ( HANDLE ) ( LONG_PTR ) ( -4 ) )
+#define NtCurrentThreadToken()          ( ( HANDLE ) ( LONG_PTR ) ( -5 ) )
 #define NtCurrentThreadEffectiveToken() ( ( HANDLE ) ( LONG_PTR ) ( -6 ) )
-
-#define ZwCurrentProcess() NtCurrentProcess()
-#define ZwCurrentThread()  NtCurrentThread()
+#define NtLastError()                   ( NtCurrentTeb()->LastErrorValue  )
+#define NtLastStatus()	                ( NtCurrentTeb()->LastStatusValue )
+#define NtCurrentPeb()                  ( ( PPEB ) NtCurrentTeb()->ProcessEnvironmentBlock )
+#define NtCurrentHeap()                 ( ( PVOID ) NtCurrentPeb()->ProcessHeap            )
+#define ZwCurrentProcess()              NtCurrentProcess()
+#define ZwCurrentThread()               NtCurrentThread()
 
 #if _WIN64
 #define NtCurrentProcessId() ( ( DWORD ) ( __readgsdword( 0x40 ) ) )
@@ -42,17 +45,14 @@
 #define C_DEF32( x ) ( * ( UINT32* ) ( x ) )
 #define C_DEF64( x ) ( * ( UINT64* ) ( x ) )
 
-#define MemCopy  __movsb
-#define MemSet   __stosb
-
 // Memory allocation NTDLL APIs
 DECLSPEC_IMPORT PVOID NTAPI NTDLL$RtlCreateHeap(
-    IN ULONG      Flags,
+    IN ULONG           Flags,
     IN OPTIONAL PVOID  HeapBase,
     IN OPTIONAL SIZE_T ReserveSize,
     IN OPTIONAL SIZE_T CommitSize,
     IN OPTIONAL PVOID  Lock,
-    IN OPTIONAL PVOID Parameters
+    IN OPTIONAL PVOID  Parameters
 );
 
 DECLSPEC_IMPORT PVOID NTAPI NTDLL$RtlReAllocateHeap(
@@ -63,52 +63,32 @@ DECLSPEC_IMPORT PVOID NTAPI NTDLL$RtlReAllocateHeap(
 );
 
 DECLSPEC_IMPORT PVOID NTAPI NTDLL$RtlAllocateHeap(
-    IN PVOID  HeapHandle,
-    IN OPTIONAL ULONG  Flags,
-    IN SIZE_T Size
+    IN PVOID          HeapHandle,
+    IN OPTIONAL ULONG Flags,
+    IN SIZE_T         Size
 );
 
 DECLSPEC_IMPORT VOID NTAPI NTDLL$RtlFreeHeap(
-    IN PVOID HeapHandle,
+    IN PVOID          HeapHandle,
     IN OPTIONAL ULONG Flags,
-    IN PVOID BaseAddress
+    IN PVOID          BaseAddress
 );
 
 // MSVCRT
 WINBASEAPI int __cdecl MSVCRT$printf( const char *__format, ... );
 
-WINBASEAPI size_t __cdecl MSVCRT$wcslen( const wchar_t *_Str );
-
-WINBASEAPI size_t __cdecl MSVCRT$strlen( const char *str );
-
-WINBASEAPI int __cdecl MSVCRT$_snwprintf( wchar_t *__restrict__       _Dest, size_t _Count,
-                                          const wchar_t *__restrict__ _Format, ... );
-
-WINBASEAPI int __cdecl MSVCRT$sprintf( char *__stream, const char *__format, ... );
-
-WINBASEAPI int __cdecl MSVCRT$strcmp( const char *_Str1, const char *_Str2 );
-
-WINBASEAPI int __cdecl MSVCRT$strncmp( const char *_Str1, const char *_Str2, size_t _MaxCount );
-
-WINBASEAPI wchar_t __cdecl *MSVCRT$wcscpy( wchar_t *strDestination, const wchar_t *strSource );
-
-WINBASEAPI errno_t __cdecl MSVCRT$wcscpy_s( wchar_t *restrict       dest, rsize_t destsz,
-                                            const wchar_t *restrict src );
-
-WINBASEAPI PCHAR __cdecl MSVCRT$strcpy(
-    char *      strDestination,
-    const char *strSource
-);
-
-#define NT_SUCCESS(Status) ((NTSTATUS)(Status) >= 0)
-#define NT_INFORMATION(Status) ((ULONG)(Status) >> 30 == 1)
-#define NT_WARNING(Status) ((ULONG)(Status) >> 30 == 2)
-#define NT_ERROR(Status) ((ULONG)(Status) >> 30 == 3)
+#define NT_SUCCESS( Status )     ( ( NTSTATUS ) ( Status ) >= 0 )
+#define NT_INFORMATION( Status ) ( ( ULONG ) ( Status ) >> 30 == 1 )
+#define NT_WARNING( Status )     ( ( ULONG ) ( Status ) >> 30 == 2 )
+#define NT_ERROR( Status )       ( ( ULONG ) ( Status ) >> 30 == 3 )
 
 // printing
 #define PRINTF( text, ... )             MSVCRT$printf( text, ##__VA_ARGS__ );
-#define PRINT_NT_ERROR( ntapi, status ) PRINTF( "[!] %s failed with error: 0x%08X\n", ntapi, status )
-#define PRINT_WIN32_ERROR( win32api )   PRINTF( "[!] %s failed with error: %ld\n", win32api, NtCurrentTeb()->LastErrorValue )
+#define PRINTF_ERROR( text, ... )       MSVCRT$printf( "[!] " text, ##__VA_ARGS__);
+//#define PRINTF( text, ... )             BeaconPrintf( CALLBACK_OUTPUT, text, ##__VA_ARGS__ );
+//#define PRINTF_ERROR( text, ... )       BeaconPrintf( CALLBACK_ERROR, text, ##__VA_ARGS__);
+#define PRINT_NT_ERROR( ntapi, status ) PRINTF_ERROR( "%s failed with error: 0x%08X\n", ntapi, status )
+#define PRINT_WIN32_ERROR( win32api )   PRINTF_ERROR( "%s failed with error: %ld\n", win32api, NtLastError() )
 
 // init unicode string
 #define INIT_UNICODE_STRING( wstr ) { .Buffer = wstr, .MaximumLength = sizeof( wstr ), .Length = sizeof( wstr ) - sizeof( WCHAR ) }
@@ -623,10 +603,4 @@ typedef struct _TEB {
     ULONG          Rcu[ 2 ];
 } TEB, *PTEB;
 
-
-#define NtLastError()   ( NtCurrentTeb()->LastErrorValue  )
-#define NtLastStatus()	( NtCurrentTeb()->LastStatusValue )
-
-#define NtCurrentPeb()  ( ( PPEB ) NtCurrentTeb()->ProcessEnvironmentBlock )
-#define NtCurrentHeap() ( ( PVOID ) NtCurrentPeb()->ProcessHeap            )
 #endif //DEFS_H

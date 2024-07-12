@@ -1,4 +1,5 @@
 #include <Ntlm.h>
+#include "utils.c"
 #include "hmac_md5.c"
 
 /*!
@@ -63,7 +64,7 @@ VOID ConvertNtHashStringToBytes(
 	CHAR HashStringUpper[ 33 ] = { 0 };
 
 	// check the size is good
-	if ( MSVCRT$strlen( HashString ) != 32 ) {
+	if ( StringLenA( HashString ) != 32 ) {
 		return;
 	}
 
@@ -123,7 +124,6 @@ VOID CalculateNtOwfv2(
 	WideStringToUpper( name, username->Length / 2, username->Buffer );
 
 	// add the domain
-	//MSVCRT$wcscpy_s( C_PTR( name ) + username->Length, domain->Length / 2, domain->Buffer );
 	MemCopy( C_PTR( name ) + username->Length, domain->Buffer, domain->Length );
 
 	// calculate the key
@@ -225,8 +225,6 @@ VOID CalculateMic(
 	                                negToken->cbBuffer + challToken->cbBuffer + authToken->cbBuffer );
 
 	// clear out the existing mic, set 0s
-	// here the is no existing mic, because the mem was initialized with HEAP_ZERO_MEMORY
-	// but i keep the line there might prevent me from troubleshooting for hours later
 	MemSet( ( ( PAUTHENTICATE_TOKEN ) authToken->pvBuffer )->Mic, 0, 16 );
 
 	// copy the tokens
@@ -271,7 +269,7 @@ SECURITY_STATUS ClientCreateNegotiateToken(
 	OUT PCredHandle    clientCreds
 ) {
 	SECURITY_STATUS           status   = { 0 };
-	SecBufferDesc             tokens   = { 0 };
+	SecBufferDesc             token    = { 0 };
 	ULONG                     flags    = { 0 };
 	SEC_WINNT_AUTH_IDENTITY_W identity = {
 		.Domain = domain->Buffer,
@@ -298,9 +296,9 @@ SECURITY_STATUS ClientCreateNegotiateToken(
 	}
 
 	// initialize a SecBufferDesc structure to receive the negotiate token
-	tokens.ulVersion           = SECBUFFER_VERSION;
-	tokens.cBuffers            = 1;
-	tokens.pBuffers            = negotiateToken;
+	token.ulVersion            = SECBUFFER_VERSION;
+	token.cBuffers             = 1;
+	token.pBuffers             = negotiateToken;
 	negotiateToken->BufferType = SECBUFFER_TOKEN;
 
 	// get a negotiate token
@@ -314,7 +312,7 @@ SECURITY_STATUS ClientCreateNegotiateToken(
 		NULL,
 		0,
 		clientCtx,
-		&tokens,
+		&token,
 		&flags,
 		NULL
 	) ) ) {
@@ -379,7 +377,7 @@ SECURITY_STATUS ServerCreateChallengeToken(
 		serverCreds,
 		NULL
 	) ) ) {
-		PRINT_NT_ERROR( "AcquireCredentialsHandleA", status );
+		PRINT_NT_ERROR( "AcquireCredentialsHandleW", status );
 		return status;
 	}
 
