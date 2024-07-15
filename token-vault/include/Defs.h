@@ -83,10 +83,10 @@ WINBASEAPI int __cdecl MSVCRT$printf( const char *__format, ... );
 #define NT_ERROR( Status )       ( ( ULONG ) ( Status ) >> 30 == 3 )
 
 // printing
-#define PRINTF( text, ... )             MSVCRT$printf( text, ##__VA_ARGS__ );
-#define PRINTF_ERROR( text, ... )       MSVCRT$printf( "[!] " text, ##__VA_ARGS__);
-//#define PRINTF( text, ... )             BeaconPrintf( CALLBACK_OUTPUT, text, ##__VA_ARGS__ );
-//#define PRINTF_ERROR( text, ... )       BeaconPrintf( CALLBACK_ERROR, text, ##__VA_ARGS__);
+//#define PRINTF( text, ... )             MSVCRT$printf( text, ##__VA_ARGS__ );
+//#define PRINTF_ERROR( text, ... )       MSVCRT$printf( "[!] " text, ##__VA_ARGS__);
+#define PRINTF( text, ... )             BeaconPrintf( CALLBACK_OUTPUT, text, ##__VA_ARGS__ );
+#define PRINTF_ERROR( text, ... )       BeaconPrintf( CALLBACK_ERROR, text, ##__VA_ARGS__);
 #define PRINT_NT_ERROR( ntapi, status ) PRINTF_ERROR( "%s failed with error: 0x%08X\n", ntapi, status )
 #define PRINT_WIN32_ERROR( win32api )   PRINTF_ERROR( "%s failed with error: %ld\n", win32api, NtLastError() )
 
@@ -117,6 +117,12 @@ typedef ULONG GDI_HANDLE_BUFFER[ GDI_HANDLE_BUFFER_SIZE ];
 (p)->SecurityDescriptor = s;                        \
 (p)->SecurityQualityOfService = NULL;               \
 }
+
+typedef struct _STRING {
+    USHORT Length;
+    USHORT MaximumLength;
+    PCHAR  Buffer;
+} STRING, *PSTRING;
 
 typedef struct _UNICODE_STRING {
     USHORT Length;

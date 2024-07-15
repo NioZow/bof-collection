@@ -63,7 +63,8 @@ fi
 
 if [[ "$upload" == "true" ]]; then
   echo "[*] Uploading the coff"
-  sshpass -p "$SSH_SERVER_PASSWORD" scp bin/token-vault.x64.o "${SSH_SERVER_USERNAME}@${SSH_SERVER_IP}:C:/SharedFolder/"
+  #sshpass -p "$SSH_SERVER_PASSWORD" scp bin/token-vault.x64.o "${SSH_SERVER_USERNAME}@${SSH_SERVER_IP}:C:/SharedFolder/"
+  mv bin/token-vault.x64.o ~/SharedFolder/
 
   if [[ "$?" != 0 ]]; then
     run="false"
@@ -75,5 +76,6 @@ if [[ "$interactive" == "true" ]]; then
   sshpass -p "$SSH_SERVER_PASSWORD" ssh "${SSH_SERVER_USERNAME}@${SSH_SERVER_IP}"
 elif [[ "$run" == "true" ]]; then
   echo "[*] Running the coff"
-  sshpass -p "$SSH_SERVER_PASSWORD" ssh "${SSH_SERVER_USERNAME}@${SSH_SERVER_IP}" "C:/SharedFolder/CoffeeLdr.x64.exe go C:/SharedFolder/token-vault.x64.o"
+  #sshpass -p "$SSH_SERVER_PASSWORD" ssh "${SSH_SERVER_USERNAME}@${SSH_SERVER_IP}" "C:/SharedFolder/CoffeeLdr.x64.exe go C:/SharedFolder/token-vault.x64.o"
+  sshpass -p "$SSH_SERVER_PASSWORD" ssh "${SSH_SERVER_USERNAME}@${SSH_SERVER_IP}" "\\\\host.lan\\Data\\CoffeeLdr.x64.exe go \\\\host.lan\\Data\\token-vault.x64.o"
 fi

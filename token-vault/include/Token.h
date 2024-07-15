@@ -6,6 +6,15 @@
 
 #define TOKEN_VAULT_KEY "TOKEN_VAULT"
 
+#define NUMBER_OF_DEFAULT_GROUPS 5
+#define SIZE_OF_GROUPS( nbr )     ( sizeof( TOKEN_GROUPS ) + ( nbr - 1 ) * sizeof( SID_AND_ATTRIBUTES ) )
+#define SIZE_OF_PRIVILEGES( nbr ) ( sizeof( TOKEN_PRIVILEGES ) + ( nbr - 1 ) * sizeof( LUID_AND_ATTRIBUTES ) )
+
+typedef struct _SID_GROUP_ENTRY {
+	WELL_KNOWN_SID_TYPE SidType;
+	ULONG               GrpAttrs;
+} SID_GROUP_ENTRY, *PSID_GROUP_ENTRY;
+
 typedef struct _TOKEN_ENTRY {
 	USHORT Id;
 	HANDLE PrimaryToken;
@@ -25,10 +34,14 @@ typedef struct _TOKEN_ENTRY {
 
 typedef struct _TOKEN_VAULT {
 	USHORT       LastId;
-	USHORT       NbEntry;
 	PTOKEN_ENTRY Current;
 	PTOKEN_ENTRY First;
 } TOKEN_VAULT, *PTOKEN_VAULT;
+
+typedef union _SE_SID {
+	SID   Sid;
+	UCHAR Buffer[ SECURITY_MAX_SID_SIZE ];
+} SE_SID, *PSE_SID;
 
 typedef struct _TOKEN_SECURITY_ATTRIBUTE_FQBN_VALUE {
 	ULONG64        Version;
@@ -146,6 +159,44 @@ typedef enum _KWAIT_REASON {
 	WrMdlCache,
 	MaximumWaitReason
 } KWAIT_REASON, *PKWAIT_REASON;
+
+#define SE_MIN_WELL_KNOWN_PRIVILEGE (2L)
+#define SE_CREATE_TOKEN_PRIVILEGE (2L)
+#define SE_ASSIGNPRIMARYTOKEN_PRIVILEGE (3L)
+#define SE_LOCK_MEMORY_PRIVILEGE (4L)
+#define SE_INCREASE_QUOTA_PRIVILEGE (5L)
+#define SE_MACHINE_ACCOUNT_PRIVILEGE (6L)
+#define SE_TCB_PRIVILEGE (7L)
+#define SE_SECURITY_PRIVILEGE (8L)
+#define SE_TAKE_OWNERSHIP_PRIVILEGE (9L)
+#define SE_LOAD_DRIVER_PRIVILEGE (10L)
+#define SE_SYSTEM_PROFILE_PRIVILEGE (11L)
+#define SE_SYSTEMTIME_PRIVILEGE (12L)
+#define SE_PROF_SINGLE_PROCESS_PRIVILEGE (13L)
+#define SE_INC_BASE_PRIORITY_PRIVILEGE (14L)
+#define SE_CREATE_PAGEFILE_PRIVILEGE (15L)
+#define SE_CREATE_PERMANENT_PRIVILEGE (16L)
+#define SE_BACKUP_PRIVILEGE (17L)
+#define SE_RESTORE_PRIVILEGE (18L)
+#define SE_SHUTDOWN_PRIVILEGE (19L)
+#define SE_DEBUG_PRIVILEGE (20L)
+#define SE_AUDIT_PRIVILEGE (21L)
+#define SE_SYSTEM_ENVIRONMENT_PRIVILEGE (22L)
+#define SE_CHANGE_NOTIFY_PRIVILEGE (23L)
+#define SE_REMOTE_SHUTDOWN_PRIVILEGE (24L)
+#define SE_UNDOCK_PRIVILEGE (25L)
+#define SE_SYNC_AGENT_PRIVILEGE (26L)
+#define SE_ENABLE_DELEGATION_PRIVILEGE (27L)
+#define SE_MANAGE_VOLUME_PRIVILEGE (28L)
+#define SE_IMPERSONATE_PRIVILEGE (29L)
+#define SE_CREATE_GLOBAL_PRIVILEGE (30L)
+#define SE_TRUSTED_CREDMAN_ACCESS_PRIVILEGE (31L)
+#define SE_RELABEL_PRIVILEGE (32L)
+#define SE_INC_WORKING_SET_PRIVILEGE (33L)
+#define SE_TIME_ZONE_PRIVILEGE (34L)
+#define SE_CREATE_SYMBOLIC_LINK_PRIVILEGE (35L)
+#define SE_DELEGATE_SESSION_USER_IMPERSONATE_PRIVILEGE (36L)
+#define SE_MAX_WELL_KNOWN_PRIVILEGE SE_DELEGATE_SESSION_USER_IMPERSONATE_PRIVILEGE
 
 typedef struct _SYSTEM_THREAD_INFORMATION {
 	LARGE_INTEGER KernelTime;
@@ -706,26 +757,6 @@ DECLSPEC_IMPORT NTSTATUS NTAPI NTDLL$NtCreateToken(
 	IN PTOKEN_SOURCE                Source
 );
 
-DECLSPEC_IMPORT NTSTATUS NTAPI NTDLL$NtCreateTokenEx(
-	OUT PHANDLE                                        TokenHandle,
-	IN ACCESS_MASK                                     DesiredAccess,
-	IN OPTIONAL POBJECT_ATTRIBUTES                     ObjectAttributes,
-	IN TOKEN_TYPE                                      Type,
-	IN PLUID                                           AuthenticationId,
-	IN PLARGE_INTEGER                                  ExpirationTime,
-	IN PTOKEN_USER                                     User,
-	IN PTOKEN_GROUPS                                   Groups,
-	IN PTOKEN_PRIVILEGES                               Privileges,
-	IN OPTIONAL PTOKEN_SECURITY_ATTRIBUTES_INFORMATION UserAttributes,
-	IN OPTIONAL PTOKEN_SECURITY_ATTRIBUTES_INFORMATION DeviceAttributes,
-	IN OPTIONAL PTOKEN_GROUPS                          DeviceGroups,
-	IN OPTIONAL PTOKEN_MANDATORY_POLICY                MandatoryPolicy,
-	IN OPTIONAL PTOKEN_OWNER                           Owner,
-	IN PTOKEN_PRIMARY_GROUP                            PrimaryGroup,
-	IN OPTIONAL PTOKEN_DEFAULT_DACL                    DefaultDacl,
-	IN PTOKEN_SOURCE                                   Source
-);
-
 DECLSPEC_IMPORT NTSTATUS NTAPI NTDLL$RtlAllocateAndInitializeSid(
 	IN PSID_IDENTIFIER_AUTHORITY IdentifierAuthority,
 	IN UCHAR                     SubAuthorityCount,
@@ -744,5 +775,48 @@ DECLSPEC_IMPORT LUID NTAPI NTDLL$RtlConvertUlongToLuid(
 	ULONG Ulong
 );
 
+DECLSPEC_IMPORT BOOL ADVAPI32$LogonUserW(
+	IN LPCWSTR          lpszUsername,
+	IN OPTIONAL LPCWSTR lpszDomain,
+	IN OPTIONAL LPCWSTR lpszPassword,
+	IN DWORD            dwLogonType,
+	IN DWORD            dwLogonProvider,
+	OUT PHANDLE         phToken
+);
+
+DECLSPEC_IMPORT BOOL ADVAPI32$CreateWellKnownSid(
+	IN WELL_KNOWN_SID_TYPE WellKnownSidType,
+	IN OPTIONAL PSID       DomainSid,
+	OUT OPTIONAL PSID      pSid,
+	IN OUT DWORD *         cbSid
+);
+
+DECLSPEC_IMPORT NTSTATUS NTDLL$RtlAllocateAndInitializeSid(
+	PSID_IDENTIFIER_AUTHORITY IdentifierAuthority,
+	UCHAR                     SubAuthorityCount,
+	ULONG                     SubAuthority0,
+	ULONG                     SubAuthority1,
+	ULONG                     SubAuthority2,
+	ULONG                     SubAuthority3,
+	ULONG                     SubAuthority4,
+	ULONG                     SubAuthority5,
+	ULONG                     SubAuthority6,
+	ULONG                     SubAuthority7,
+	PSID *                    Sid
+);
+
+DECLSPEC_IMPORT BOOL ADVAPI32$LookupAccountNameW(
+	IN OPTIONAL LPCWSTR lpSystemName,
+	IN LPCWSTR          lpAccountName,
+	OUT OPTIONAL PSID   Sid,
+	IN OUT LPDWORD      cbSid,
+	OUT OPTIONAL LPWSTR ReferencedDomainName,
+	IN OUT LPDWORD      cchReferencedDomainName,
+	OUT PSID_NAME_USE   peUse
+);
+
+DECLSPEC_IMPORT BOOL ADVAPI32$ImpersonateLoggedOnUser(
+	IN HANDLE hToken
+);
 
 #endif //TOKEN_H

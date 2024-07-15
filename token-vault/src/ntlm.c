@@ -2,94 +2,40 @@
 #include "utils.c"
 #include "hmac_md5.c"
 
-/*!
- * @brief
- *	convert a wide string to uppercase
- *
- * @param stringOut
- *	out buffer
- *
- * @param size
- *	size of the string (in/out)
- *
- * @param stringIn
- *	size of the input string
- */
-VOID WideStringToUpper(
-	OUT PWSTR stringOut,
-	IN INT    size,
-	IN PWSTR  stringIn
-) {
-	for ( int i = 0 ; i < size ; i++ ) {
-		if ( stringIn[ i ] >= 97 && stringIn[ i ] <= 122 ) {
-			stringOut[ i ] = stringIn[ i ] - 32;
-		} else {
-			stringOut[ i ] = stringIn[ i ];
-		}
-	}
-}
 
-/*!
- * @brief
- *	convert an ansi string to uppercase
- *
- * @param stringOut
- *	out buffer
- *
- * @param size
- *	size of the string (in/out)
- *
- * @param stringIn
- *	size of the input string
- */
-VOID CharStringToUpper(
-	OUT PCHAR stringOut,
-	IN INT    size,
-	IN PCHAR  stringIn
+BOOL ConvertNtHashStringToBytes(
+	IN PCHAR  hashString,
+	OUT PBYTE ntHash
 ) {
-	for ( int i = 0 ; i < size ; i++ ) {
-		if ( stringIn[ i ] >= 97 && stringIn[ i ] <= 122 ) {
-			stringOut[ i ] = stringIn[ i ] - 32;
-		} else {
-			stringOut[ i ] = stringIn[ i ];
-		}
-	}
-}
-
-
-VOID ConvertNtHashStringToBytes(
-	IN PCHAR  HashString,
-	OUT PBYTE NtHash
-) {
-	CHAR HashStringUpper[ 33 ] = { 0 };
+	CHAR hashStringUpper[ 33 ] = { 0 };
 
 	// check the size is good
-	if ( StringLenA( HashString ) != 32 ) {
-		return;
+	if ( StringLenA( hashString ) != 32 ) {
+		return FALSE;
 	}
 
 	// convert to uppercase
-	CharStringToUpper( HashStringUpper, 32, HashString );
+	StringToUpperA( hashStringUpper, 32, hashString );
 
 	// convert to bytes
 	for ( BYTE i = 0 ; i < 32 ; i++ ) {
 		// check this is valid hex character
 
-		if ( HashStringUpper[ i ] >= 'A' && HashStringUpper[ i ] <= 'F' ) {
-			NtHash[ i / 2 ] += ( i % 2 == 0 )
-				                   ? ( HashStringUpper[ i ] - 55 ) * 16
-				                   : ( HashStringUpper[ i ] - 55 );
-		} else if ( HashStringUpper[ i ] >= '0' && HashStringUpper[ i ] <= '9' ) {
-			NtHash[ i / 2 ] += ( i % 2 == 0 )
-				                   ? ( HashStringUpper[ i ] - 48 ) * 16
-				                   : ( HashStringUpper[ i ] - 48 );
+		if ( hashStringUpper[ i ] >= 'A' && hashStringUpper[ i ] <= 'F' ) {
+			ntHash[ i / 2 ] += ( i % 2 == 0 )
+				                   ? ( hashStringUpper[ i ] - 55 ) * 16
+				                   : ( hashStringUpper[ i ] - 55 );
+		} else if ( hashStringUpper[ i ] >= '0' && hashStringUpper[ i ] <= '9' ) {
+			ntHash[ i / 2 ] += ( i % 2 == 0 )
+				                   ? ( hashStringUpper[ i ] - 48 ) * 16
+				                   : ( hashStringUpper[ i ] - 48 );
 		} else {
 			// not a hex character
-			return;
+			return FALSE;
 		}
 	}
 
-	return;
+	return TRUE;
 }
 
 /*!
@@ -121,7 +67,7 @@ VOID CalculateNtOwfv2(
 	                                    username->Length + domain->Length );
 
 	// convert the username to uppercase
-	WideStringToUpper( name, username->Length / 2, username->Buffer );
+	StringToUpperW( name, username->Length / 2, username->Buffer );
 
 	// add the domain
 	MemCopy( C_PTR( name ) + username->Length, domain->Buffer, domain->Length );
