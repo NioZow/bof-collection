@@ -1763,4 +1763,8 @@ VOID go(
 
 	END:
 	if ( Server.Buffer ) NTDLL$RtlFreeHeap( NtCurrentPeb()->ProcessHeap, 0, Server.Buffer );
+	if ( Domain.Buffer ) NTDLL$RtlFreeHeap( NtCurrentPeb()->ProcessHeap, 0, Domain.Buffer );
+	if ( Name1.Buffer ) NTDLL$RtlFreeHeap( NtCurrentPeb()->ProcessHeap, 0, Name1.Buffer );
+	if ( Name2.Buffer ) NTDLL$RtlFreeHeap( NtCurrentPeb()->ProcessHeap, 0, Name2.Buffer );
+	if ( Name3.Buffer ) NTDLL$RtlFreeHeap( NtCurrentPeb()->ProcessHeap, 0, Name3.Buffer );
 }
