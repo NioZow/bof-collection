@@ -1,0 +1,8 @@
+venv
+cmake-build-debug
+.idea
+.env
+.cache
+.run
+bin/*.o
+build
