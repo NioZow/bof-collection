@@ -1,1 +1,0 @@
-/usr/bin/cc -g CMakeFiles/token_vault.dir/src/token.c.o CMakeFiles/token_vault.dir/src/ntlm.c.o CMakeFiles/token_vault.dir/src/hmac_md5.c.o -o token_vault

