@@ -4,7 +4,7 @@
 
 ## Showcase
 
-![Demo](./images/Showcase.png)
+![Demo](./images/showcase.png)
 
 ## Credits
 

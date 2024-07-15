@@ -9,7 +9,7 @@ all: x64 x86
 
 x86:
 	@ echo "[*] Compiling x86 bof"
-	@ $(CC_x86) -o bin/$(BOF_NAME).x86.o -Os -c entry.c $(SRC) $(FLAGS)
+	@ $(CC_x86) -o bin/$(BOF_NAME).x86.o -Os -c $(SRC) $(FLAGS)
 
 x64:
 	@ echo "[*] Compiling x64 bof"

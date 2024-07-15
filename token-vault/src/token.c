@@ -3,12 +3,9 @@
 
 /*
  * todo:
- * 	enable/disable privileges/groups (NtAdjustPrivilegeToken, NtAdjustGroupsToken)
- * 	internal monologue
  * 	fix issue of implant crashing after token create, token make_pth, token impersonate last make_pth (NtSetInformationThread crashes)
  * 	fix issue of not being able to call token create twice
  * 	do not use "token create", not stable at all
- * 	bypass token filtering make_pth
  */
 
 /*!
@@ -470,6 +467,7 @@ VOID TokenGetuid() {
 	if ( vault && vault->Current ) {
 		PRINTF( "%ls\\%ls", vault->Current->Domain, vault->Current->Username );
 	} else {
+		PRINTF( "bitch" );
 		if ( ! NT_SUCCESS( NTDLL$NtQueryInformationToken(
 			NtCurrentThreadEffectiveToken(),
 			TokenUser,
