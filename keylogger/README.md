@@ -11,6 +11,7 @@
 This project was tested on a fr-FR AZERTY and en-US QWERTY keyboard on windows11, it may not work for all keyboard languages, test it before.
 
 ## TODO
+- Proper shellcode loader
 - Handle the ALT-GR key
 - Look into the SHIFT + CAPSLOCK behaviour
 - Handle non printables characters
