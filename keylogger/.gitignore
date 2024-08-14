@@ -1,0 +1,11 @@
+venv
+cmake-build-debug
+.idea
+.env
+.cache
+.run
+bin/*.bin
+bin/*.o
+bin/*.exe
+bin/*.c
+build

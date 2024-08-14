@@ -10,10 +10,6 @@ SECTIONS
         *( .text$A );
         *( .text$B );
         *( .rdata* );
-        FILL( 0x00 )
-        . = ALIGN( 0x1000 );
-        __Instance_offset = .;
-        *( .global );
         *( .text$E );
         *( .text$P );
     }

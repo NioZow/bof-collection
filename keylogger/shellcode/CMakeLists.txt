@@ -16,14 +16,14 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wl,-s,--no-seh,--enable-stdcall-fixup")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -masm=intel -fpermissive -mrdrnd")
 
 #
-# include path
-#
-include_directories(include)
-
-#
 # compile defintions
 #
 add_compile_definitions(IMPERIUM_DEBUG)
+
+#
+# include path
+#
+include_directories(include)
 
 #
 # output directory
