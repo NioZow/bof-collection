@@ -1,4 +1,4 @@
-# Sammy
+# Token Vault
 
 > Beacon Object File (BOF) for [Havoc](https://github.com/HavocFramework/Havoc) that manages token.
 
@@ -7,11 +7,14 @@
 ![Demo](./images/showcase.png)
 
 ## WARNING
+
+This project is not meant to replace havoc's builtin token module, I just did that bof for fun & learning purposes. I suggest you use havoc's default token module as it is more stable.
+
 This project is not finished and there probably are memory leaks and you might encounter crashes.
 
 The "token create" command isn't stable and I suggest you not to use it.
 
-## Features that need to be done
+## TODO
 * Internal-Monologue -> Switch to Net-NTLMv1 using regkey
 * Token make_pth -> bypass UAC using regkey
 * adjust privileges (disable/enable groups/privs) using NtAdjustPrivilegeToken/NtAdjustGroupsToken
