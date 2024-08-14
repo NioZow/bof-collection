@@ -4,11 +4,11 @@
 
 ## Showcase
 
-![Demo](assets/demo.png)
+![Demo](./assets/demo.png)
 
 ## WARNING
 
-This project is not finished and so there are bugs that make the implant crash.
+This project is not finished and there are bugs that can make the implant crash.
 
 ## Credits
 
