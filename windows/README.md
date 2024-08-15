@@ -4,9 +4,10 @@
 
 ## Showcase
 
-## WARNING
+![Demo](./assets/demo.png)
 
-This project was not yet ported to a BOF, for now it is just shellcode.
+## Description
 
-## TODO
-- Make it a BOF instead of shellcode
+This bof can be used to list windows visible on a user screen. Did it mostly for fun, havoc already has that functionality, however it does
+print the PID and process name of the windows.
+

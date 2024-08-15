@@ -3,3 +3,4 @@ cmake-build-debug/
 .bin/obj/*.o
 .bin/*.bin
 .bin/*.exe
+.bin/*.o
