@@ -1,0 +1,5 @@
+cmake-build-debug/
+.idea/
+.bin/obj/*.o
+.bin/*.bin
+.bin/*.exe
